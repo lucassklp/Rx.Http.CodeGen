@@ -6,6 +6,8 @@ using Fluent.CodeGen;
 using CaseConverter;
 using Microsoft.OpenApi.Expressions;
 using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi.Interfaces;
+using System.CodeDom.Compiler;
 
 
 var httpClient = new HttpClient();
@@ -33,6 +35,28 @@ var typesMap = new Dictionary<string, string>()
     { "object", "object" },
 };
 
+string? ExtractType(OpenApiSchema? element)
+{
+    if(element is null)
+    {
+        return null;
+    }
+
+    var type = typesMap[element.Type];
+
+    if(type == "object")
+    {
+        type = element?.Reference?.Id ?? "object";
+    }
+    else if(type == "List<object>")
+    {
+        var subtype = element?.Items?.Reference?.Id ?? element?.Items?.Type ?? "object";
+        type = $"List<{subtype}>";
+    }
+
+    return type;
+}
+
 
 //Generate model classes (schemas)
 ClassGen GenerateModelClasses(string name, OpenApiSchema schema)
@@ -45,17 +69,7 @@ ClassGen GenerateModelClasses(string name, OpenApiSchema schema)
 
     foreach (var property in properties)
     {
-        var type = typesMap[property.Value.Type];
-
-        if(type == "object")
-        {
-            type = property.Value.Reference.Id;
-        }
-        else if(type == "List<object>")
-        {
-            var subtype = property.Value?.Items?.Reference?.Id ?? property.Value?.Items?.Type;
-            type = $"List<{subtype}>";
-        }
+        var type = ExtractType(property.Value);
 
         var fieldGen = new FieldGen(name: property.Key.ToPascalCase(), type: type)
             .Public();
@@ -90,6 +104,38 @@ void GenerateConstructor(ClassGen classGen, OpenApiDocument openApi)
     });
 }
 
+string? GenerateOptions(OpenApiOperation operation)
+{
+        List<string> queryParams = operation.Parameters.Where(x => x.In == ParameterLocation.Query)
+            .Select(x => $"options.AddQueryString(\"{x.Name}\", {x.Name});")
+            .ToList();
+
+        List<string> headerParams = operation.Parameters.Where(x => x.In == ParameterLocation.Header)
+            .Select(x => $"options.AddHeader(\"{x.Name}\", {x.Name});")
+            .ToList();
+
+        if(queryParams.Any() || headerParams.Any())
+        {
+            var stringWriter = new StringWriter();
+            var indentedTextWriter = new IndentedTextWriter(stringWriter);
+            indentedTextWriter.Indent++;
+
+            var optionsParameters = new List<string>();
+            optionsParameters.AddRange(queryParams);
+            optionsParameters.AddRange(headerParams);
+
+            optionsParameters.ForEach(x => indentedTextWriter.WriteLine(x));
+            
+            return $$"""
+            options => {
+                {{ stringWriter.GetStringBuilder() }}}
+            """;
+        }
+
+        return null;
+}
+
+
 void GenerateMethod(string path, string httpMethod, OpenApiOperation operation)
 {
     OpenApiSchema? schema = null;
@@ -102,37 +148,58 @@ void GenerateMethod(string path, string httpMethod, OpenApiOperation operation)
         Console.WriteLine($"failed to {httpMethod} {path} - {ex.Message}");
     }
 
-    string type = schema?.Reference?.Id ?? "object";
-
-    if(schema?.Type == "array")
-    {
-        type = $"List<{schema.Items.Reference.Id}>";
-    }
+    string? type = ExtractType(schema);
 
     var body = string.Empty;
 
-    var methodGen = new MethodGen(name: operation.OperationId.ToPascalCase(), returnType: $"IObservable<{type}>")
+    var methodGen = new MethodGen(name: operation.OperationId.ToPascalCase(), returnType: $"IObservable<{type ?? "RxHttpResponse"}>")
         .Public();
-        
+    
+    var argumentType = string.IsNullOrEmpty(type) ? "" : $"<{type}>";
+    
     if (operation.RequestBody is null)
     {
-        body = $"""
-            return {httpMethod.ToPascalCase()}<{type}>($"{path}");
-            """;
+        var options = GenerateOptions(operation);
+        if(options is null)
+        {
+            body = $"""
+                return {httpMethod.ToPascalCase()}{argumentType}($"{path}");
+                """;
+        }
+        else
+        {
+            body = $"""
+                return {httpMethod.ToPascalCase()}{argumentType}($"{path}", null, {options});
+                """;
+        }
     }
     else
     {
-        var bodyType = "object";
+        string bodyType = "object";
 
         if (operation.RequestBody.Content.Any(x => x.Key == "application/json"))
         {
-            bodyType = typesMap[operation.RequestBody.Content["application/json"].Schema.Type];
+            var bodySchema = operation.RequestBody.Content["application/json"].Schema;
+            bodyType = ExtractType(bodySchema) ?? "object";
         }
         
         methodGen.WithParameter(bodyType, "body");
-        body = $"""
-            return {httpMethod.ToPascalCase()}<{type}>($"{path}", body);
-            """;
+        
+
+        var options = GenerateOptions(operation);
+        if(options is null)
+        {
+            body = $"""
+                return {httpMethod.ToPascalCase()}{argumentType}($"{path}", body);
+                """;
+
+        }
+        else
+        {
+            body = $"""
+                return {httpMethod.ToPascalCase()}{argumentType}($"{path}", body, {options});
+                """;
+        }
     }
 
     methodGen.WithBody(body);
