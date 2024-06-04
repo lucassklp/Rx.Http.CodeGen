@@ -2,31 +2,93 @@
 using Rx.Http.CodeGen;
 using Rx.Http;
 using System.Reactive.Linq;
-
-var httpClient = RxHttpClient.Create();
-var path = "";
-
-
-var keycloakOpenApiDefinition = httpClient.Get("https://raw.githubusercontent.com/ccouzens/keycloak-openapi/main/keycloak/22.0.0.json")
-    .SelectMany(httpResp => httpResp.Content.ReadAsStringAsync())
-    .Wait();
-
-var keycloakConsumerGen = new ConsumerGenerator(
-    path: Path.Combine(path, "Keycloak"), 
-    @namespace: "Keycloak", 
-    openApiDefinition: keycloakOpenApiDefinition,
-    consumerName: "Keycloak",
-    defaultType: "IDictionary<string, object>");
-keycloakConsumerGen.GenerateFiles();
+using CommandLine;
+using CaseConverter;
 
 
-var petStoreOpenApiDefinition = httpClient.Get("https://petstore3.swagger.io/api/v3/openapi.json")
-    .SelectMany(httpResp => httpResp.Content.ReadAsStringAsync())
-    .Wait();
+Parser.Default.ParseArguments<ConsumerGenerationOptions>(args)
+    .WithParsed(options =>
+    {
 
-var petstoreConsumerGen = new ConsumerGenerator(
-    path: Path.Combine(path, "PetStore"), 
-    @namespace: "Petstore.Swagger", 
-    openApiDefinition: petStoreOpenApiDefinition,
-    consumerName: "PetStore");
-petstoreConsumerGen.GenerateFiles();
+        Console.ResetColor();
+
+        string? openApiDefinition = null;
+        var initialPath = Directory.GetCurrentDirectory();
+        string defaultType = "object";
+        if (!string.IsNullOrEmpty(options.Url))
+        {
+            Console.WriteLine($"Fetching {options.Url}");
+            try
+            {
+                var httpClient = RxHttpClient.Create();
+                openApiDefinition = httpClient.Get(options.Url)
+                    .SelectMany(httpResp => httpResp.Content.ReadAsStringAsync())
+                    .Wait();
+
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"An error occurred when fetching {options.Url}: {ex.Message}");
+                Console.ResetColor();
+                return;
+            }
+        }
+        else if (!string.IsNullOrEmpty(options.File))
+        {
+            try
+            {
+                Console.WriteLine($"Reading {options.File}");
+                if (options.File?.StartsWith(".") ?? false)
+                {
+                    openApiDefinition = File.ReadAllText(Path.Combine(initialPath, options.File));
+                }
+                else
+                {
+                    openApiDefinition = File.ReadAllText(options.File);
+                }
+            }
+            catch (Exception ex) 
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"An error occurred when reading {options.File}: {ex.Message}");
+                Console.ResetColor();
+                return;
+            }
+        }
+
+        if(options.Type == "dictionary")
+        {
+            defaultType = "IDictionary<string, object>";
+        }
+
+        if (!string.IsNullOrEmpty(openApiDefinition))
+        {
+            Console.WriteLine($"Trying to generate the code");
+            if (options.Verbose)
+            {
+                Console.WriteLine($"OpenApi definition read: {openApiDefinition}");
+            }
+            try
+            {
+                var consumerGen = new ConsumerGenerator(
+                    path: Path.Combine(initialPath, options.Namespace),
+                    @namespace: options.Namespace,
+                    openApiDefinition: openApiDefinition,
+                    consumerName: options.Output?.ToPascalCase() ?? "",
+                    defaultType: defaultType);
+                consumerGen.GenerateFiles();
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("Code generated successfully!");
+                Console.ResetColor();
+                return;
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"An error occurred when generating files: {ex.Message}");
+                Console.ResetColor();
+                return;
+            }
+        }
+    });

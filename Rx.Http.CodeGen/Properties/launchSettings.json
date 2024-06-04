@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Rx.Http.CodeGen": {
+      "commandName": "Project",
+      "commandLineArgs": "-n Keycloak -o Keycloak -u https://raw.githubusercontent.com/ccouzens/keycloak-openapi/main/keycloak/22.0.0.json"
+    }
+  }
+}

@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="CaseConverter" Version="2.0.1" />
+    <PackageReference Include="CommandLineParser" Version="2.9.1" />
     <PackageReference Include="Fluent.CodeGen" Version="1.0.0-alpha" />
     <PackageReference Include="Microsoft.OpenApi.Readers" Version="1.6.14" />
     <PackageReference Include="Rx.Http" Version="2.0.3" />
