@@ -1,5 +1,4 @@
-﻿// See https://aka.ms/new-console-template for more information
-using Rx.Http.CodeGen;
+﻿using Rx.Http.CodeGen;
 using Rx.Http;
 using System.Reactive.Linq;
 using CommandLine;
@@ -71,12 +70,16 @@ Parser.Default.ParseArguments<ConsumerGenerationOptions>(args)
             }
             try
             {
-                var consumerGen = new ConsumerGenerator(
-                    path: Path.Combine(initialPath, options.Namespace),
-                    @namespace: options.Namespace,
-                    openApiDefinition: openApiDefinition,
-                    consumerName: options.Output?.ToPascalCase() ?? "",
-                    defaultType: defaultType);
+                var consumerConfig = new ConsumerGenerationConfig
+                {
+                    Path = Path.Combine(initialPath, options.Namespace),
+                    Namespace = options.Namespace,
+                    OpenApiDefinition = openApiDefinition,
+                    ConsumerName = options.Output?.ToPascalCase() ?? "",
+                    Type = defaultType
+                };
+
+                var consumerGen = new ConsumerGenerator(consumerConfig);
                 consumerGen.GenerateFiles();
                 Console.ForegroundColor = ConsoleColor.Green;
                 Console.WriteLine("Code generated successfully!");

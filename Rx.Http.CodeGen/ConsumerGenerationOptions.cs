@@ -13,7 +13,7 @@ namespace Rx.Http.CodeGen
         [Option('n', "namespace", Required = true, HelpText = "The name of the namespace of generated source")]
         public string Namespace { get; set; }
 
-        [Option('o', "output", Required = true, HelpText = "The output consumer class name")]
+        [Option('o', "output", Required = true, HelpText = "The output Consumer Class Name")]
         public string Output { get; set; }
 
         [Option('t', "type", Required = false, Default = "object", HelpText = "Set the default type for unknown models. Possible values: 'object' or 'dictionary'")]

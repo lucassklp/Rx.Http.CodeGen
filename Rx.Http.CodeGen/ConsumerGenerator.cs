@@ -9,19 +9,13 @@ namespace Rx.Http.CodeGen
 {
     public class ConsumerGenerator
     {
-        private string @namespace;
+        private ConsumerGenerationConfig config;
         private OpenApiDocument openApiDocument;
-        private string defaultType;
-        private string path;
-        private string consumerName;
 
-        public ConsumerGenerator(string path, string @namespace, string openApiDefinition, string consumerName, string defaultType = "object")
+        public ConsumerGenerator(ConsumerGenerationConfig config)
         {
-            this.@namespace = @namespace;
-            this.defaultType = defaultType;
-            openApiDocument = new OpenApiStringReader().Read(openApiDefinition, out var _);
-            this.path = path;
-            this.consumerName = consumerName;
+            this.config = config;
+            openApiDocument = new OpenApiStringReader().Read(config.OpenApiDefinition, out var _);
         }
 
         private string? ExtractType(OpenApiSchema? element)
@@ -35,7 +29,7 @@ namespace Rx.Http.CodeGen
 
             if (type == "object")
             {
-                type = element?.Reference?.Id?.ToPascalCase() ?? defaultType;
+                type = element?.Reference?.Id?.ToPascalCase() ?? config.Type;
             }
             else if (type == "List<object>")
             {
@@ -49,7 +43,7 @@ namespace Rx.Http.CodeGen
         private ClassGen GenerateModelClasses(string name, OpenApiSchema schema)
         {
             var modelClassGen = new ClassGen(name: name.ToPascalCase())
-                .Namespace(@namespace)
+                .Namespace($"{config.Namespace}.Models")
                 .Public();
 
             var properties = schema.Properties;
@@ -226,27 +220,11 @@ namespace Rx.Http.CodeGen
         }
 
 
-        public void GenerateFiles()
+        public string GenerateConsumerCode(string className)
         {
-            if (Directory.Exists(path))
-            {
-                Directory.Delete(path, true);
-            }
-
-            Directory.CreateDirectory(path);
-
-            foreach (var schema in openApiDocument.Components.Schemas)
-            {
-                var modelClass = GenerateModelClasses(schema.Key, schema.Value);
-                var modelFileDir = Path.Combine(path, $"{modelClass.ClassName}.cs");
-                var content = modelClass.GenerateCode();
-                GenerateFile(modelFileDir, content);
-            }
-
-            //Generate the consumer
-            var classGen = new ClassGen($"{consumerName}Consumer")
+            var classGen = new ClassGen(className)
                 .Extends("RxHttpClient")
-                .Namespace(@namespace)
+                .Namespace(config.Namespace)
                 .Using("System", "Rx.Http", "Rx.Http.Extensions");
 
             GenerateConstructor(classGen, openApiDocument);
@@ -260,8 +238,41 @@ namespace Rx.Http.CodeGen
                 }
             }
 
-            var consumerFileDir = Path.Combine(this.path, $"{classGen.ClassName}.cs");
-            GenerateFile(consumerFileDir, classGen.GenerateCode());
+            return classGen.GenerateCode();
+        }
+
+        public List<ClassGen> GenerateModelsClassGen()
+        {
+            return openApiDocument.Components.Schemas
+                .Select(schema => GenerateModelClasses(schema.Key, schema.Value))
+                .ToList();
+        }
+
+        public void GenerateModelFiles(ClassGen classGen)
+        {
+            var modelFileDir = Path.Combine(config.Path, "Models", $"{classGen.ClassName}.cs");
+            var content = classGen.GenerateCode();
+            GenerateFile(modelFileDir, content);
+        }
+
+        public void GenerateFiles()
+        {
+            if (Directory.Exists(config.Path))
+            {
+                Directory.Delete(config.Path, true);
+            }
+
+            Directory.CreateDirectory(config.Path);
+
+            GenerateModelsClassGen()
+                .ForEach(GenerateModelFiles);
+
+            //Generate the consumer
+            var className = $"{config.ConsumerName}Consumer";
+            var generatedCode = GenerateConsumerCode(className);
+
+            var consumerFileDir = Path.Combine(config.Path, $"{className}.cs");
+            GenerateFile(consumerFileDir, generatedCode);
         }
     }
 }
