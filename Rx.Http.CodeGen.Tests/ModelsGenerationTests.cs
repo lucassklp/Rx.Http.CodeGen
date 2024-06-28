@@ -7,7 +7,6 @@ public class ModelsGenerationTests
     [Fact]
     public void CreateAccessModel()
     {
-
         var openApiDefinition = """"
             {
                 "openapi": "3.0.2",

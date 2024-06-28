@@ -52,10 +52,10 @@ namespace Rx.Http.CodeGen
             {
                 var type = ExtractType(property.Value);
 
-                var fieldGen = new FieldGen(name: property.Key.ToPascalCase(), type: type)
+                var propertyGen = new PropertyGen(name: property.Key.ToPascalCase(), type: type)
                     .Public();
 
-                modelClassGen.WithField(fieldGen);
+                modelClassGen.WithProperty(propertyGen);
             }
 
             return modelClassGen;
@@ -225,7 +225,7 @@ namespace Rx.Http.CodeGen
             var classGen = new ClassGen(className)
                 .Extends("RxHttpClient")
                 .Namespace(config.Namespace)
-                .Using("System", "Rx.Http", "Rx.Http.Extensions");
+                .Using("System", "Rx.Http", "Rx.Http.Extensions", $"{config.Namespace}.Models");
 
             GenerateConstructor(classGen, openApiDocument);
 
@@ -262,7 +262,7 @@ namespace Rx.Http.CodeGen
                 Directory.Delete(config.Path, true);
             }
 
-            Directory.CreateDirectory(config.Path);
+            Directory.CreateDirectory(Path.Combine(config.Path, "Models"));
 
             GenerateModelsClassGen()
                 .ForEach(GenerateModelFiles);
