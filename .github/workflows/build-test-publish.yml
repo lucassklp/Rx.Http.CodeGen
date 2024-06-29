@@ -1,0 +1,37 @@
+name: Build, Test and Publish
+
+on:
+  push:
+    branches: 
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 8.0.101
+        source-url: https://nuget.pkg.github.com/lucassklp/index.json
+      env:
+        NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+    - name: Install dependencies
+      run: dotnet restore
+
+    - name: Test
+      run: dotnet test
+
+    - name: Pack
+      run: |
+        dotnet pack -c Release -o .
+
+    - name: Push Rx.Http to GitHub registry
+      run: |
+        dotnet nuget push "*.nupkg" -k ${{ secrets.GITHUB_TOKEN }} -s https://nuget.pkg.github.com/lucassklp/index.json --skip-duplicate
+
+    - name: Push Rx.Http to NuGet registry
+      run: |
+        dotnet nuget push "*.nupkg" -k ${{secrets.NUGET_API_KEY}} -s https://api.nuget.org/v3/index.json --skip-duplicate
