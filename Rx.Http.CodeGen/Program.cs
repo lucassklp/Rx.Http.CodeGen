@@ -4,11 +4,9 @@ using System.Reactive.Linq;
 using CommandLine;
 using CaseConverter;
 
-
 Parser.Default.ParseArguments<ConsumerGenerationOptions>(args)
     .WithParsed(options =>
     {
-
         Console.ResetColor();
 
         string? openApiDefinition = null;
@@ -44,7 +42,7 @@ Parser.Default.ParseArguments<ConsumerGenerationOptions>(args)
                 }
                 else
                 {
-                    openApiDefinition = File.ReadAllText(options.File);
+                    openApiDefinition = File.ReadAllText(options.File!);
                 }
             }
             catch (Exception ex) 
@@ -68,15 +66,17 @@ Parser.Default.ParseArguments<ConsumerGenerationOptions>(args)
             {
                 Console.WriteLine($"OpenApi definition read: {openApiDefinition}");
             }
+
             try
             {
                 var consumerConfig = new ConsumerGenerationConfig
                 {
-                    Path = Path.Combine(initialPath, options.Namespace),
+                    Path = Path.Combine(initialPath, options.Namespace!),
                     Namespace = options.Namespace,
                     OpenApiDefinition = openApiDefinition,
                     ConsumerName = options.Output?.ToPascalCase() ?? "",
-                    Type = defaultType
+                    Type = defaultType,
+                    Verbose = options.Verbose
                 };
 
                 var consumerGen = new ConsumerGenerator(consumerConfig);
@@ -90,6 +90,10 @@ Parser.Default.ParseArguments<ConsumerGenerationOptions>(args)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine($"An error occurred when generating files: {ex.Message}");
+                if(options.Verbose)
+                {
+                    Console.WriteLine(ex.StackTrace);
+                }
                 Console.ResetColor();
                 return;
             }
