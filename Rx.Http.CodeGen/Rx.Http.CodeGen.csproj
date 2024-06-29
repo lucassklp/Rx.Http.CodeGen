@@ -8,7 +8,12 @@
 		<Nullable>enable</Nullable>
 		<PackAsTool>true</PackAsTool>
 		<ToolCommandName>rx-http-codegen</ToolCommandName>
-		<PackageOutputPath>./nupkg</PackageOutputPath>
+
+		<Authors>Lucas Simas</Authors>
+		<Description>Source Generator for Rx.Http library</Description>
+		<PackageProjectUrl>https://github.com/lucassklp/Rx.Http.CodeGen</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/lucassklp/Rx.Http.CodeGen</RepositoryUrl>
+		<PackageIcon>rx.http.icon.png</PackageIcon>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -17,6 +22,10 @@
 		<PackageReference Include="Fluent.CodeGen" Version="1.1.1" />
 		<PackageReference Include="Microsoft.OpenApi.Readers" Version="1.6.15" />
 		<PackageReference Include="Rx.Http" Version="2.0.3" />
+	</ItemGroup>
+
+    <ItemGroup>
+		<None Include="..\resources\rx.http.icon.png" Pack="true" PackagePath="\" />
 	</ItemGroup>
 
 </Project>
