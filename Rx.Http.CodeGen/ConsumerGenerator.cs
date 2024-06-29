@@ -4,6 +4,7 @@ using Microsoft.OpenApi.Extensions;
 using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Readers;
 using System.CodeDom.Compiler;
+using System.Text;
 
 namespace Rx.Http.CodeGen
 {
@@ -52,11 +53,13 @@ namespace Rx.Http.CodeGen
             {
                 var type = ExtractType(property.Value);
 
-                var propertyGen = new PropertyGen(name: property.Key.ToPascalCase(), type: type)
+                var propertyGen = new PropertyGen(name: property.Key.ToPascalCase(), type: type!)
                     .Public();
 
                 modelClassGen.WithProperty(propertyGen);
             }
+
+            LogIfVerbose(modelClassGen.GenerateCode());
 
             return modelClassGen;
         }
@@ -69,7 +72,50 @@ namespace Rx.Http.CodeGen
                     .WithParameter("HttpClient", "httpClient")
                     .WithBase("httpClient", "null");
 
+
+                var body = new StringBuilder();
+                if (openApi.Servers.Any())
+                {
+                    body.AppendLine($"""httpClient.BaseAddress = new Uri("{ openApi.Servers.First().Url }");""");
+                }
+
+                if(openApi.Components.SecuritySchemes.Any(x => x.Value.Type == SecuritySchemeType.Http && x.Value.Scheme == "bearer"))
+                {
+                    body.AppendLine($"""RequestInterceptors.Add(new {config.ConsumerName}TokenInterceptor());""");
+                    GenerateTokenInterceptor();
+                }
+
+                ctor.WithBody(body.ToString());
+
             });
+        }
+
+        private void GenerateTokenInterceptor()
+        {
+
+            LogIfVerbose("Generating token interceptor");
+
+            var interceptMethod = new MethodGen("Intercept")
+                .Public()
+                .WithParameter("RxHttpRequestOptions", "request")
+                .WithBody("""
+                // Implement your logic to handle your token here
+                request.UseBearerAuthorization("token");
+                """);
+
+            var tokenInterceptorGen = new ClassGen($"{config.ConsumerName}TokenInterceptor")
+                .Using("Rx.Http", "Rx.Http.Extensions", "Rx.Http.Interceptors")
+                .Namespace(config.Namespace!)
+                .Implements("RxRequestInterceptor")
+                .WithMethod(interceptMethod);
+
+            var filename = Path.Combine(config.Path!, config.ConsumerName + "TokenInterceptor.cs");
+
+            var generatedCode = tokenInterceptorGen.GenerateCode();
+            
+            LogIfVerbose(generatedCode);
+            
+            GenerateFile(filename, generatedCode);
         }
         
         private string? GenerateOptions(OpenApiOperation operation)
@@ -203,28 +249,18 @@ namespace Rx.Http.CodeGen
             return methodGen;
         }
 
-
-        string AdjustRoute(string route)
-        {
-            return route.ToCamelCase();
-        }
-
-
         private void GenerateFile(string path, string content) 
         {
-            // Write the string to a file.
             StreamWriter file = new StreamWriter(path);
             file.WriteLine(content);
-
             file.Close();
         }
-
 
         public string GenerateConsumerCode(string className)
         {
             var classGen = new ClassGen(className)
                 .Extends("RxHttpClient")
-                .Namespace(config.Namespace)
+                .Namespace(config.Namespace!)
                 .Using("System", "Rx.Http", "Rx.Http.Extensions", $"{config.Namespace}.Models");
 
             GenerateConstructor(classGen, openApiDocument);
@@ -233,7 +269,7 @@ namespace Rx.Http.CodeGen
             {
                 foreach (var operation in path.Value.Operations)
                 {
-                    var method = GenerateMethod(AdjustRoute(path.Key), path.Value, operation.Key.GetDisplayName(), operation.Value);
+                    var method = GenerateMethod(path.Key.ToCamelCase(), path.Value, operation.Key.GetDisplayName(), operation.Value);
                     classGen.WithMethod(method);
                 }
             }
@@ -250,7 +286,7 @@ namespace Rx.Http.CodeGen
 
         public void GenerateModelFiles(ClassGen classGen)
         {
-            var modelFileDir = Path.Combine(config.Path, "Models", $"{classGen.ClassName}.cs");
+            var modelFileDir = Path.Combine(config.Path!, "Models", $"{classGen.ClassName}.cs");
             var content = classGen.GenerateCode();
             GenerateFile(modelFileDir, content);
         }
@@ -262,7 +298,7 @@ namespace Rx.Http.CodeGen
                 Directory.Delete(config.Path, true);
             }
 
-            Directory.CreateDirectory(Path.Combine(config.Path, "Models"));
+            Directory.CreateDirectory(Path.Combine(config.Path!, "Models"));
 
             GenerateModelsClassGen()
                 .ForEach(GenerateModelFiles);
@@ -271,8 +307,16 @@ namespace Rx.Http.CodeGen
             var className = $"{config.ConsumerName}Consumer";
             var generatedCode = GenerateConsumerCode(className);
 
-            var consumerFileDir = Path.Combine(config.Path, $"{className}.cs");
+            var consumerFileDir = Path.Combine(config.Path!, $"{className}.cs");
             GenerateFile(consumerFileDir, generatedCode);
+        }
+
+        private void LogIfVerbose(string msg)
+        {
+            if(config.Verbose)
+            {
+                Console.WriteLine(msg);
+            }
         }
     }
 }
