@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Version>1.0.0-alpha.1</Version>
+		<Version>1.0.0-alpha.2</Version>
 		<OutputType>Exe</OutputType>
 		<TargetFramework>net8.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
@@ -21,7 +21,7 @@
 		<PackageReference Include="CommandLineParser" Version="2.9.1" />
 		<PackageReference Include="Fluent.CodeGen" Version="1.1.1" />
 		<PackageReference Include="Microsoft.OpenApi.Readers" Version="1.6.15" />
-		<PackageReference Include="Rx.Http" Version="2.0.3" />
+		<PackageReference Include="Rx.Http" Version="2.1.0" />
 	</ItemGroup>
 
     <ItemGroup>

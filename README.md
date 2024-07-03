@@ -6,6 +6,8 @@
 </p>
 
 
+This tool is used to generate [Rx.Http consumer](https://github.com/lucassklp/Rx.Http?tab=readme-ov-file#consumers) based on OpenApi definitions.
+
 ## Installation
 
 ```sh
@@ -15,7 +17,7 @@ dotnet tool install -g rx.http.codegen
 ## Usage (Example)
 
 ```sh
-dotnet rx-http-codegen -- --namespace Keycloak --output Keycloak --url https://raw.githubusercontent.com/ccouzens/keycloak-openapi/main/keycloak/22.0.0.json
+rx-http-codegen --namespace Swagger.Petstore --output Petstore --url https://petstore.swagger.io/v2/swagger.json
 ```
 
 ### Avalable options

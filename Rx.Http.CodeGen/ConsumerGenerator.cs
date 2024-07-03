@@ -21,12 +21,22 @@ namespace Rx.Http.CodeGen
 
         private string? ExtractType(OpenApiSchema? element)
         {
+            string type = string.Empty;
+
             if (element is null)
             {
                 return null;
             }
 
-            var type = Consts.TypesMap[element.Type];
+            if(element.Type == "number")
+            {
+                return string.IsNullOrEmpty(element.Format) ? "double" : element.Format;
+            }
+
+            if(!string.IsNullOrEmpty(element.Type) && Consts.TypesMap.ContainsKey(element.Type))
+            {
+                type = Consts.TypesMap[element.Type];
+            }
 
             if (type == "object")
             {
@@ -38,6 +48,11 @@ namespace Rx.Http.CodeGen
                 type = $"List<{subtype}>";
             }
 
+            if(string.IsNullOrWhiteSpace(type) && !string.IsNullOrWhiteSpace(element?.Reference?.Id))
+            {
+                return element?.Reference?.Id?.ToPascalCase();
+            }
+
             return type;
         }
         
@@ -47,16 +62,24 @@ namespace Rx.Http.CodeGen
                 .Namespace($"{config.Namespace}.Models")
                 .Public();
 
-            var properties = schema.Properties;
-
-            foreach (var property in properties)
+            void AddProperties(IDictionary<string, OpenApiSchema> properties)
             {
-                var type = ExtractType(property.Value);
+                foreach (var property in properties)
+                {
+                    var type = ExtractType(property.Value);
 
-                var propertyGen = new PropertyGen(name: property.Key.ToPascalCase(), type: type!)
-                    .Public();
+                    var propertyGen = new PropertyGen(name: property.Key.ToPascalCase(), type: type!)
+                        .Public();
 
-                modelClassGen.WithProperty(propertyGen);
+                    modelClassGen.WithProperty(propertyGen);
+                }
+            }
+
+            AddProperties(schema.Properties);
+
+            foreach (var subschema in schema.AllOf)
+            {
+                AddProperties(subschema.Properties);
             }
 
             LogIfVerbose(modelClassGen.GenerateCode());
