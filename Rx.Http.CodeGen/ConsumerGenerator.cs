@@ -12,45 +12,40 @@ namespace Rx.Http.CodeGen
     {
         private ConsumerGenerationConfig config;
         private OpenApiDocument openApiDocument;
+        public List<ClassGen> ModelClassesGen { get; private set; }
+        public ClassGen ConsumerClassGen { get; private set; }
+        public ClassGen TokenInterceptorClassGen { get; private set; }
 
         public ConsumerGenerator(ConsumerGenerationConfig config)
         {
             this.config = config;
             openApiDocument = new OpenApiStringReader().Read(config.OpenApiDefinition, out var _);
+            ModelClassesGen = GenerateModelsClassGen();
+            ConsumerClassGen = GenerateConsumer();
         }
 
         private string? ExtractType(OpenApiSchema? element)
         {
-            string type = string.Empty;
-
             if (element is null)
             {
                 return null;
             }
 
-            if(element.Type == "number")
+            string type = TypeMapping.GetAssociatedType(element);
+            if (type == "List<object>")
             {
-                return string.IsNullOrEmpty(element.Format) ? "double" : element.Format;
-            }
-
-            if(!string.IsNullOrEmpty(element.Type) && Consts.TypesMap.ContainsKey(element.Type))
-            {
-                type = Consts.TypesMap[element.Type];
-            }
-
-            if (type == "object")
-            {
-                type = element?.Reference?.Id?.ToPascalCase() ?? config.Type;
-            }
-            else if (type == "List<object>")
-            {
-                var subtype = element?.Items?.Reference?.Id?.ToPascalCase() ?? element?.Items?.Type ?? "object";
+                var subtype = TypeMapping.GetAssociatedType(element.Items);
                 type = $"List<{subtype}>";
             }
 
-            if(string.IsNullOrWhiteSpace(type) && !string.IsNullOrWhiteSpace(element?.Reference?.Id))
+            if(TypeMapping.HasUnderlyingType(type))
             {
-                return element?.Reference?.Id?.ToPascalCase();
+                return $"Models.{type}";
+            }
+
+            if(type == "object")
+            {
+                return config.Type == "object" ? "object" : "Dictionary<string, object>";
             }
 
             return type;
@@ -68,7 +63,14 @@ namespace Rx.Http.CodeGen
                 {
                     var type = ExtractType(property.Value);
 
-                    var propertyGen = new PropertyGen(name: property.Key.ToPascalCase(), type: type!)
+                    var propertyName = property.Key.ToPascalCase();
+
+                    if(char.IsDigit(propertyName.First()))
+                    {
+                        propertyName = $"_{propertyName}";
+                    }
+
+                    var propertyGen = new PropertyGen(name: propertyName, type: type!)
                         .Public();
 
                     modelClassGen.WithProperty(propertyGen);
@@ -105,7 +107,7 @@ namespace Rx.Http.CodeGen
                 if(openApi.Components.SecuritySchemes.Any(x => x.Value.Type == SecuritySchemeType.Http && x.Value.Scheme == "bearer"))
                 {
                     body.AppendLine($"""RequestInterceptors.Add(new {config.ConsumerName}TokenInterceptor());""");
-                    GenerateTokenInterceptor();
+                    TokenInterceptorClassGen = GenerateTokenInterceptor();
                 }
 
                 ctor.WithBody(body.ToString());
@@ -113,9 +115,8 @@ namespace Rx.Http.CodeGen
             });
         }
 
-        private void GenerateTokenInterceptor()
+        private ClassGen GenerateTokenInterceptor()
         {
-
             LogIfVerbose("Generating token interceptor");
 
             var interceptMethod = new MethodGen("Intercept")
@@ -132,13 +133,11 @@ namespace Rx.Http.CodeGen
                 .Implements("RxRequestInterceptor")
                 .WithMethod(interceptMethod);
 
-            var filename = Path.Combine(config.Path!, config.ConsumerName + "TokenInterceptor.cs");
-
             var generatedCode = tokenInterceptorGen.GenerateCode();
             
             LogIfVerbose(generatedCode);
             
-            GenerateFile(filename, generatedCode);
+            return tokenInterceptorGen;
         }
         
         private string? GenerateOptions(OpenApiOperation operation)
@@ -174,6 +173,11 @@ namespace Rx.Http.CodeGen
 
         private MethodGen GenerateMethod(string route, OpenApiPathItem path, string httpMethod, OpenApiOperation operation)
         {
+            if(operation.OperationId == "deleteDormantAccounts")
+            {
+                Console.WriteLine("HUE");
+            }
+
             OpenApiSchema? schema = operation.Responses?.Where(x => x.Key == "200")
                 .Select(x => x.Value)?
                 .FirstOrDefault()?.Content?
@@ -188,6 +192,8 @@ namespace Rx.Http.CodeGen
             var methodGen = new MethodGen(name: operation.OperationId.ToPascalCase(), returnType: $"IObservable<{type ?? "RxHttpResponse"}>")
                 .Public();
 
+            var @base = GetBase(httpMethod);
+
             var argumentType = string.IsNullOrEmpty(type) ? "" : $"<{type}>";
 
             if (operation.RequestBody is null)
@@ -196,14 +202,14 @@ namespace Rx.Http.CodeGen
                 if (options is null)
                 {
                     body = $"""
-                return base.{httpMethod.ToPascalCase()}{argumentType}($"{route}");
-                """;
+                        return {@base}{httpMethod.ToPascalCase()}{argumentType}($"{route}");
+                        """;
                 }
                 else
                 {
                     body = $"""
-                return base.{httpMethod.ToPascalCase()}{argumentType}($"{route}", null, {options});
-                """;
+                        return {@base}{httpMethod.ToPascalCase()}{argumentType}($"{route}", null, {options});
+                        """;
                 }
             }
             else
@@ -214,41 +220,60 @@ namespace Rx.Http.CodeGen
                 if (operation.RequestBody.Content.Any(x => x.Key == "application/x-www-form-urlencoded"))
                 {
                     var bodySchema = operation.RequestBody.Content["application/x-www-form-urlencoded"].Schema;
-                    bodyType = ExtractType(bodySchema) ?? "object";
+                    var objectMap = new List<string>();
 
-                    var objectMap = bodySchema.Properties.Select(x => $$"""
-                    { "{{x.Key}}", body.{{x.Key.ToPascalCase()}} }
-                """);
+                    foreach (var parameter in bodySchema.Properties)
+                    {
+                        var name = parameter.Key;
+                        var paramType = ExtractType(parameter.Value);
+                        methodGen.WithParameter(name: name.ToCamelCase(), type: paramType);
+                        var toString = paramType == "string" ? "" : ".ToString()";
+                        objectMap.Add($$"""
+                            { "{{parameter.Key}}", {{parameter.Key}}{{toString}} }
+                        """);
+                    }
 
                     bodyArgument = $$"""
-                new FormUrlEncodedContent(new Dictionary<string, string>
+                    new FormUrlEncodedContent(new Dictionary<string, string>
+                    {
+                    {{string.Join(",\n", objectMap)}}
+                    })
+                    """;
+                }
+
+                if (operation.RequestBody.Content.Any(x => x.Key == "multipart/form-data"))
                 {
-                {{string.Join(",\n", objectMap)}}
+                    methodGen.WithParameter("MultipartFormDataContent", "body");
                 }
-                """;
+
+                if (operation.RequestBody.Content.Any(x => x.Key == "text/plain"))
+                {
+                    methodGen.WithParameter("string", "body");
                 }
+
 
                 if (operation.RequestBody.Content.Any(x => x.Key == "application/json"))
                 {
                     var bodySchema = operation.RequestBody.Content["application/json"].Schema;
                     bodyType = ExtractType(bodySchema) ?? "object";
                     bodyArgument = "body";
+
+                    methodGen.WithParameter(bodyType, "body");
                 }
-
-                methodGen.WithParameter(bodyType, "body");
-
+                
                 var options = GenerateOptions(operation);
+
                 if (options is null)
                 {
                     body = $"""
-                return base.{httpMethod.ToPascalCase()}{argumentType}($"{route}", {bodyArgument});
-                """;
+                        return {@base}{httpMethod.ToPascalCase()}{argumentType}($"{route}", {bodyArgument});
+                        """;
                 }
                 else
                 {
                     body = $"""
-                return base.{httpMethod.ToPascalCase()}{argumentType}($"{route}", {bodyArgument}, {options});
-                """;
+                        return {@base}{httpMethod.ToPascalCase()}{argumentType}($"{route}", {bodyArgument}, {options});
+                        """;
                 }
             }
 
@@ -257,19 +282,27 @@ namespace Rx.Http.CodeGen
             foreach (var parameter in operation.Parameters)
             {
                 var name = parameter.Name;
-                var paramType = Consts.TypesMap[parameter.Schema.Type];
+                var paramType = ExtractType(parameter.Schema);
                 methodGen.WithParameter(name: name.ToCamelCase(), type: paramType);
-
             }
 
             foreach (var parameter in path.Parameters)
             {
                 var name = parameter.Name;
-                var paramType = Consts.TypesMap[parameter.Schema.Type];
+                var paramType = ExtractType(parameter.Schema);
                 methodGen.WithParameter(name: name.ToCamelCase(), type: paramType);
             }
 
             return methodGen;
+        }
+
+        private string GetBase(string httpMethod)
+        {
+            var operationIds = openApiDocument.Paths.SelectMany(c => c.Value.Operations)
+                .Select(x => x.Value)
+                .Select(x => x.OperationId.ToPascalCase());
+            
+            return operationIds.Any(x => x == httpMethod.ToPascalCase()) ? "base." : string.Empty;
         }
 
         private void GenerateFile(string path, string content) 
@@ -279,8 +312,12 @@ namespace Rx.Http.CodeGen
             file.Close();
         }
 
-        public string GenerateConsumerCode(string className)
+        private string GenerateConsumerName() => $"{config.ConsumerName}Consumer";
+
+        public ClassGen GenerateConsumer()
         {
+            var className = GenerateConsumerName();
+
             var classGen = new ClassGen(className)
                 .Extends("RxHttpClient")
                 .Namespace(config.Namespace!)
@@ -297,17 +334,19 @@ namespace Rx.Http.CodeGen
                 }
             }
 
-            return classGen.GenerateCode();
+            LogIfVerbose(classGen.GenerateCode());
+
+            return classGen;
         }
 
-        public List<ClassGen> GenerateModelsClassGen()
+        private List<ClassGen> GenerateModelsClassGen()
         {
             return openApiDocument.Components.Schemas
                 .Select(schema => GenerateModelClasses(schema.Key, schema.Value))
                 .ToList();
         }
 
-        public void GenerateModelFiles(ClassGen classGen)
+        private void GenerateModelFiles(ClassGen classGen)
         {
             var modelFileDir = Path.Combine(config.Path!, "Models", $"{classGen.ClassName}.cs");
             var content = classGen.GenerateCode();
@@ -323,15 +362,19 @@ namespace Rx.Http.CodeGen
 
             Directory.CreateDirectory(Path.Combine(config.Path!, "Models"));
 
-            GenerateModelsClassGen()
-                .ForEach(GenerateModelFiles);
+            // Create model files
+            ModelClassesGen.ForEach(GenerateModelFiles);
 
-            //Generate the consumer
-            var className = $"{config.ConsumerName}Consumer";
-            var generatedCode = GenerateConsumerCode(className);
+            // Create token interceptor file
+            if(TokenInterceptorClassGen != null)
+            {
+                var tokenInterceptorDir = Path.Combine(config.Path!, config.ConsumerName + "TokenInterceptor.cs");
+                GenerateFile(tokenInterceptorDir, TokenInterceptorClassGen.GenerateCode());
+            }
 
-            var consumerFileDir = Path.Combine(config.Path!, $"{className}.cs");
-            GenerateFile(consumerFileDir, generatedCode);
+            // Create consumer files
+            var consumerFileDir = Path.Combine(config.Path!, $"{ConsumerClassGen.ClassName}.cs");
+            GenerateFile(consumerFileDir, ConsumerClassGen.GenerateCode());
         }
 
         private void LogIfVerbose(string msg)

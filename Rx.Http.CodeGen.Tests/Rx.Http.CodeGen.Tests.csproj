@@ -24,4 +24,8 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="Files\**" CopyToOutputDirectory="Always"/>
+  </ItemGroup>
+  
 </Project>
