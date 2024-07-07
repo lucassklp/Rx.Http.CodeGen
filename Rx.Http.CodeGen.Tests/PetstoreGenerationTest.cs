@@ -2,15 +2,13 @@ namespace Rx.Http.CodeGen.Tests;
 
 public class PetstoreGenerationTests : FileGenerationTests
 {
-    private string definitionFile;
-    private ConsumerGenerationConfig consumerOptions;
+    private readonly ConsumerGenerationConfig consumerOptions;
 
     public PetstoreGenerationTests()
     {
-        definitionFile = ReadInputFile("petstore.json");
         consumerOptions = new ConsumerGenerationConfig
         {
-            OpenApiDefinition = definitionFile,
+            OpenApiDefinition = ReadInputFile("petstore.json"),
             Path = "",
             ConsumerName = "Petstore",
             Type = "object",

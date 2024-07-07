@@ -2,15 +2,13 @@ namespace Rx.Http.CodeGen.Tests;
 
 public class KeycloakGenerationTests : FileGenerationTests
 {
-    private string definitionFile;
-    private ConsumerGenerationConfig consumerOptions;
+    private readonly ConsumerGenerationConfig consumerOptions;
 
     public KeycloakGenerationTests()
     {
-        definitionFile = ReadInputFile("keycloak.json");
         consumerOptions = new ConsumerGenerationConfig
         {
-            OpenApiDefinition = definitionFile,
+            OpenApiDefinition = ReadInputFile("keycloak.json"),
             Path = "",
             ConsumerName = "Keycloak",
             Type = "object",

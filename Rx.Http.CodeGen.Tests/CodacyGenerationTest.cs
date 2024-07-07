@@ -2,15 +2,13 @@ namespace Rx.Http.CodeGen.Tests;
 
 public class CodacyGenerationTests : FileGenerationTests
 {
-    private string definitionFile;
-    private ConsumerGenerationConfig consumerOptions;
+    private readonly ConsumerGenerationConfig consumerOptions;
 
     public CodacyGenerationTests()
     {
-        definitionFile = ReadInputFile("codacy.yaml");
         consumerOptions = new ConsumerGenerationConfig
         {
-            OpenApiDefinition = definitionFile,
+            OpenApiDefinition = ReadInputFile("codacy.yaml"),
             Path = "",
             ConsumerName = "Codacy",
             Type = "object",
