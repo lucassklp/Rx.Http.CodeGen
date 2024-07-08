@@ -5,6 +5,22 @@
   <img src="resources/rx.http.mini.png">
 </p>
 
+<p align="center">
+    <img alt="nuget" src="https://img.shields.io/nuget/dt/Rx.Http.CodeGen.svg">
+    <a href="https://app.codacy.com/gh/lucassklp/Rx.Http.CodeGen/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade">
+      <img src="https://app.codacy.com/project/badge/Grade/4e6b1046b6f148ae8d769c0555901e24"/>
+    </a>
+    <a href="https://app.codacy.com/gh/lucassklp/Rx.Http.CodeGen/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage">
+      <img src="https://app.codacy.com/project/badge/Coverage/4e6b1046b6f148ae8d769c0555901e24"/>
+    </a>
+    <a href="https://www.nuget.org/packages/Rx.Http.CodeGen/">
+      <img alt="nuget version" src="https://img.shields.io/nuget/v/Rx.Http.CodeGen.svg">
+    </a>
+</p>
+
+
+
+This tool is used to generate [Rx.Http consumer](https://github.com/lucassklp/Rx.Http?tab=readme-ov-file#consumers) based on OpenApi definition file.
 
 ## Installation
 
@@ -15,7 +31,7 @@ dotnet tool install -g rx.http.codegen
 ## Usage (Example)
 
 ```sh
-dotnet rx-http-codegen -- --namespace Keycloak --output Keycloak --url https://raw.githubusercontent.com/ccouzens/keycloak-openapi/main/keycloak/22.0.0.json
+rx-http-codegen --namespace Swagger.Petstore --output Petstore --url https://petstore.swagger.io/v2/swagger.json
 ```
 
 ### Avalable options

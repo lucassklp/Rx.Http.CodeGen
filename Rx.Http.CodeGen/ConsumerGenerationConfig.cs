@@ -2,16 +2,16 @@
 {
     public class ConsumerGenerationConfig
     {
-        public string? OpenApiDefinition { get; set; }
+        public required string OpenApiDefinition { get; init; }
         
-        public string? Path { get; set; }
+        public required string Path { get; init; }
 
-        public string? Namespace { get; set; }
+        public string? Namespace { get; init; }
 
-        public string? ConsumerName { get; set; }
+        public required string ConsumerName { get; init; }
 
-        public string? Type { get; set; }
+        public required string Type { get; init; }
 
-        public bool Verbose { get; set; }
+        public required bool Verbose { get; init; }
     }
 }
