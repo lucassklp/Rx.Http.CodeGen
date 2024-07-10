@@ -7,27 +7,25 @@ using CaseConverter;
 Parser.Default.ParseArguments<ConsumerGenerationOptions>(args)
     .WithParsed(options =>
     {
-        Console.ResetColor();
+        Logger.IsVerbose = options.Verbose;
 
         string? openApiDefinition = null;
         var initialPath = Directory.GetCurrentDirectory();
         string defaultType = "object";
         if (!string.IsNullOrEmpty(options.Url))
         {
-            Console.WriteLine($"Fetching {options.Url}");
+            Logger.Log($"Fetching {options.Url}");
             try
             {
                 var httpClient = RxHttpClient.Create();
                 openApiDefinition = httpClient.Get(options.Url)
                     .SelectMany(httpResp => httpResp.Content.ReadAsStringAsync())
                     .Wait();
-
             }
             catch (Exception ex)
             {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"An error occurred when fetching {options.Url}: {ex.Message}");
-                Console.ResetColor();
+                Logger.Log($"An error occurred when fetching {options.Url}: {ex.Message}", ConsoleColor.Red);
+                Logger.LogVerbose(ex.StackTrace, ConsoleColor.Red);
                 return;
             }
         }
@@ -35,7 +33,7 @@ Parser.Default.ParseArguments<ConsumerGenerationOptions>(args)
         {
             try
             {
-                Console.WriteLine($"Reading {options.File}");
+                Logger.Log($"Reading {options.File}");
                 if (options.File?.StartsWith(".") ?? false)
                 {
                     openApiDefinition = File.ReadAllText(Path.Combine(initialPath, options.File));
@@ -47,9 +45,8 @@ Parser.Default.ParseArguments<ConsumerGenerationOptions>(args)
             }
             catch (Exception ex) 
             {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"An error occurred when reading {options.File}: {ex.Message}");
-                Console.ResetColor();
+                Logger.Log($"An error occurred when reading {options.File}: {ex.Message}", ConsoleColor.Red);
+                Logger.LogVerbose(ex.StackTrace, ConsoleColor.Red);
                 return;
             }
         }
@@ -61,11 +58,8 @@ Parser.Default.ParseArguments<ConsumerGenerationOptions>(args)
 
         if (!string.IsNullOrEmpty(openApiDefinition))
         {
-            Console.WriteLine($"Trying to generate the code");
-            if (options.Verbose)
-            {
-                Console.WriteLine($"OpenApi definition read: {openApiDefinition}");
-            }
+            Logger.Log($"Trying to generate the code");
+            Logger.LogVerbose($"OpenApi definition read: {openApiDefinition}");
 
             try
             {
@@ -81,20 +75,14 @@ Parser.Default.ParseArguments<ConsumerGenerationOptions>(args)
 
                 var consumerGen = new ConsumerGenerator(consumerConfig);
                 consumerGen.GenerateFiles();
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("Code generated successfully!");
-                Console.ResetColor();
+
+                Logger.Log("Code generated successfully!", ConsoleColor.Green);
                 return;
             }
             catch (Exception ex)
             {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"An error occurred when generating files: {ex.Message}");
-                if(options.Verbose)
-                {
-                    Console.WriteLine(ex.StackTrace);
-                }
-                Console.ResetColor();
+                Logger.Log($"An error occurred when generating files: {ex.Message}", ConsoleColor.Red);
+                Logger.LogVerbose(ex.StackTrace, ConsoleColor.Red);
                 return;
             }
         }
