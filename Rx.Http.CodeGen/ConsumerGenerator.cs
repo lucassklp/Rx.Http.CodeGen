@@ -84,7 +84,7 @@ namespace Rx.Http.CodeGen
                 AddProperties(subschema.Properties);
             }
 
-            LogIfVerbose(modelClassGen.GenerateCode());
+            Logger.LogVerbose(() => modelClassGen.GenerateCode());
 
             return modelClassGen;
         }
@@ -117,7 +117,7 @@ namespace Rx.Http.CodeGen
 
         private ClassGen GenerateTokenInterceptor()
         {
-            LogIfVerbose("Generating token interceptor");
+            Logger.LogVerbose("Generating token interceptor");
 
             var interceptMethod = new MethodGen("Intercept")
                 .Public()
@@ -132,10 +132,8 @@ namespace Rx.Http.CodeGen
                 .Namespace(config.Namespace!)
                 .Implements("RxRequestInterceptor")
                 .WithMethod(interceptMethod);
-
-            var generatedCode = tokenInterceptorGen.GenerateCode();
             
-            LogIfVerbose(generatedCode);
+            Logger.LogVerbose(() => tokenInterceptorGen.GenerateCode());
             
             return tokenInterceptorGen;
         }
@@ -173,11 +171,6 @@ namespace Rx.Http.CodeGen
 
         private MethodGen GenerateMethod(string route, OpenApiPathItem path, string httpMethod, OpenApiOperation operation)
         {
-            if(operation.OperationId == "deleteDormantAccounts")
-            {
-                Console.WriteLine("HUE");
-            }
-
             OpenApiSchema? schema = operation.Responses?.Where(x => x.Key == "200")
                 .Select(x => x.Value)?
                 .FirstOrDefault()?.Content?
@@ -334,7 +327,7 @@ namespace Rx.Http.CodeGen
                 }
             }
 
-            LogIfVerbose(classGen.GenerateCode());
+            Logger.LogVerbose(() => classGen.GenerateCode());
 
             return classGen;
         }
@@ -375,14 +368,6 @@ namespace Rx.Http.CodeGen
             // Create consumer files
             var consumerFileDir = Path.Combine(config.Path!, $"{ConsumerClassGen.ClassName}.cs");
             GenerateFile(consumerFileDir, ConsumerClassGen.GenerateCode());
-        }
-
-        private void LogIfVerbose(string msg)
-        {
-            if(config.Verbose)
-            {
-                Console.WriteLine(msg);
-            }
         }
     }
 }
