@@ -25,7 +25,7 @@ This tool is used to generate [Rx.Http consumer](https://github.com/lucassklp/Rx
 ## Installation
 
 ```sh
-dotnet tool install -g rx.http.codegen
+dotnet tool install --global Rx.Http.CodeGen --version 1.0.0-alpha.3
 ```
 
 ## Usage (Example)
