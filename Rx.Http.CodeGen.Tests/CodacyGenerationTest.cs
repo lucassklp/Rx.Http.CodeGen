@@ -12,8 +12,7 @@ public class CodacyGenerationTests : FileGenerationTests
             Path = "",
             ConsumerName = "Codacy",
             Type = "object",
-            Namespace = "Codacy",
-            Verbose = false
+            Namespace = "Codacy"
         };
     }
 

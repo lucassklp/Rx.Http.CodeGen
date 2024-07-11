@@ -11,9 +11,8 @@ public class KeycloakDictGenerationTests : FileGenerationTests
             OpenApiDefinition = ReadInputFile("keycloak.json"),
             Path = "",
             ConsumerName = "Keycloak",
-            Type = "dictionary",
-            Namespace = "Keycloak.Dict",
-            Verbose = false
+            Type = "Dictionary<string, object>",
+            Namespace = "Keycloak.Dict"
         };
     }
 
@@ -33,7 +32,7 @@ public class KeycloakDictGenerationTests : FileGenerationTests
     {
         var consumerGen = new ConsumerGenerator(consumerOptions);
 
-        var generatedCode = consumerGen.TokenInterceptorClassGen.GenerateCode().Replace("\r\n", "\n") + "\n";
+        var generatedCode = consumerGen.TokenInterceptorClassGen!.GenerateCode().Replace("\r\n", "\n") + "\n";
         var expected = ReadOutputFile(consumerOptions.Namespace!, "KeycloakTokenInterceptor.cs").Replace("\r\n", "\n");
 
         Assert.Equal(expected, generatedCode);

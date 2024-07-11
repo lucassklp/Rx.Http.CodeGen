@@ -12,8 +12,7 @@ public class PetstoreGenerationTests : FileGenerationTests
             Path = "",
             ConsumerName = "Petstore",
             Type = "object",
-            Namespace = "Swagger.Petstore",
-            Verbose = false
+            Namespace = "Swagger.Petstore"
         };
     }
 

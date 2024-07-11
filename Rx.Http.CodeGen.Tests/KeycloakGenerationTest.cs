@@ -12,8 +12,7 @@ public class KeycloakGenerationTests : FileGenerationTests
             Path = "",
             ConsumerName = "Keycloak",
             Type = "object",
-            Namespace = "Keycloak",
-            Verbose = false
+            Namespace = "Keycloak"
         };
     }
 
@@ -33,7 +32,7 @@ public class KeycloakGenerationTests : FileGenerationTests
     {
         var consumerGen = new ConsumerGenerator(consumerOptions);
 
-        var generatedCode = consumerGen.TokenInterceptorClassGen.GenerateCode().Replace("\r\n", "\n") + "\n";
+        var generatedCode = consumerGen.TokenInterceptorClassGen!.GenerateCode().Replace("\r\n", "\n") + "\n";
         var expected = ReadOutputFile(consumerOptions.Namespace!, "KeycloakTokenInterceptor.cs").Replace("\r\n", "\n");
 
         Assert.Equal(expected, generatedCode);

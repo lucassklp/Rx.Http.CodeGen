@@ -6,12 +6,10 @@
         
         public required string Path { get; init; }
 
-        public string? Namespace { get; init; }
+        public required string Namespace { get; init; }
 
         public required string ConsumerName { get; init; }
 
         public required string Type { get; init; }
-
-        public required bool Verbose { get; init; }
     }
 }

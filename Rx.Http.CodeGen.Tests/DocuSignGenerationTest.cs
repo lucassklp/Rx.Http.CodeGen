@@ -12,8 +12,7 @@ public class DocuSignGenerationTests : FileGenerationTests
             Path = "",
             ConsumerName = "DocuSign",
             Type = "object",
-            Namespace = "DocuSign",
-            Verbose = false
+            Namespace = "DocuSign"
         };
     }
 

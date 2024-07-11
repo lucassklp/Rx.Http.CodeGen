@@ -14,7 +14,7 @@ namespace Rx.Http.CodeGen
         private OpenApiDocument openApiDocument;
         public List<ClassGen> ModelClassesGen { get; private set; }
         public ClassGen ConsumerClassGen { get; private set; }
-        public ClassGen TokenInterceptorClassGen { get; private set; }
+        public ClassGen? TokenInterceptorClassGen { get; private set; }
 
         public ConsumerGenerator(ConsumerGenerationConfig config)
         {
@@ -26,11 +26,11 @@ namespace Rx.Http.CodeGen
 
         private string? ExtractType(OpenApiSchema? element)
         {
-            if (element is null)
+            if(element is null)
             {
                 return null;
             }
-
+            
             string type = TypeMapping.GetAssociatedType(element);
             if (type == "List<object>")
             {
@@ -45,7 +45,7 @@ namespace Rx.Http.CodeGen
 
             if(type == "object")
             {
-                return config.Type == "object" ? "object" : "Dictionary<string, object>";
+                return config.Type;
             }
 
             return type;
@@ -84,7 +84,7 @@ namespace Rx.Http.CodeGen
                 AddProperties(subschema.Properties);
             }
 
-            Logger.LogVerbose(() => modelClassGen.GenerateCode());
+            Logger.LogVerbose(modelClassGen.GenerateCode);
 
             return modelClassGen;
         }
@@ -133,7 +133,7 @@ namespace Rx.Http.CodeGen
                 .Implements("RxRequestInterceptor")
                 .WithMethod(interceptMethod);
             
-            Logger.LogVerbose(() => tokenInterceptorGen.GenerateCode());
+            Logger.LogVerbose(tokenInterceptorGen.GenerateCode);
             
             return tokenInterceptorGen;
         }
@@ -161,9 +161,9 @@ namespace Rx.Http.CodeGen
                 optionsParameters.ForEach(indentedTextWriter.WriteLine);
 
                 return $$"""
-            options => {
-                {{stringWriter.GetStringBuilder()}}}
-            """;
+                    options => {
+                        {{stringWriter.GetStringBuilder()}}}
+                    """;
             }
 
             return null;
@@ -327,7 +327,7 @@ namespace Rx.Http.CodeGen
                 }
             }
 
-            Logger.LogVerbose(() => classGen.GenerateCode());
+            Logger.LogVerbose(classGen.GenerateCode);
 
             return classGen;
         }
