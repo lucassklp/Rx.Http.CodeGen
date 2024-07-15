@@ -1,3 +1,5 @@
+#!/bin/sh
+
 cd Rx.Http.CodeGen
 dotnet run -- -u https://raw.githubusercontent.com/ccouzens/keycloak-openapi/main/keycloak/22.0.0.json -o Keycloak -n Keycloak
 dotnet run -- -u https://raw.githubusercontent.com/ccouzens/keycloak-openapi/main/keycloak/22.0.0.json -o Keycloak -n Keycloak.Dict -t dictionary
