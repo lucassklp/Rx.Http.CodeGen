@@ -6072,6 +6072,14 @@ parameters:
     description: Returns only the enabled or disabled patterns.
     x-ms-parameter-location: 'method'
 
+  recommendedPatternParam:
+    in: query
+    name: recommended
+    required: false
+    type: boolean
+    description: Returns only the recommended or non-recommended patterns.
+    x-ms-parameter-location: 'method'
+
   issueStatusParam:
     in: query
     name: status
@@ -6731,7 +6739,6 @@ paths:
       x-jvm-package: analysis
       summary: |
         Patterns configuration for (repository, tool). Uses standard if applied, repository settings otherwise.
-        WARNING: Sort and direction are not implemented yet.
       operationId: listRepositoryToolPatterns
       parameters:
         - $ref: '#/parameters/providerParam'
@@ -6743,6 +6750,7 @@ paths:
         - $ref: '#/parameters/severityLevelsParam'
         - $ref: '#/parameters/searchParam'
         - $ref: '#/parameters/enabledPatternParam'
+        - $ref: '#/parameters/recommendedPatternParam'
         - $ref: '#/parameters/patternsSortParam'
         - $ref: '#/parameters/directionParam'
         - $ref: '#/parameters/cursorParam'
@@ -6795,6 +6803,8 @@ paths:
           $ref: '#/responses/Forbidden'
         '404':
           $ref: '#/responses/NotFound'
+        '409':
+          $ref: '#/responses/Conflict'
         '500':
           $ref: '#/responses/InternalServerError'
 
