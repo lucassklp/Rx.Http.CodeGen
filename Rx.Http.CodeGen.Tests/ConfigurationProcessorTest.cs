@@ -20,7 +20,7 @@ public class ConfigurationProcessorTests : FileGenerationTests
         Assert.Equal(ReadInputFile("keycloak.json"), consumerConfig.OpenApiDefinition);
         Assert.Equal(args.Namespace, consumerConfig.Namespace);
         Assert.Equal("Test", consumerConfig.ConsumerName);
-        Assert.Equal("IDictionary<string, object>", consumerConfig.Type);
+        Assert.Equal("Dictionary<string, object>", consumerConfig.Type);
     }
 
     [Fact]

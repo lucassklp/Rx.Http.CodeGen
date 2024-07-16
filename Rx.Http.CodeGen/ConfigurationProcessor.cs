@@ -53,7 +53,7 @@ public class ConfigurationProcessor(ConsumerGenerationArgs args)
 
         if(args.Type == "dictionary")
         {
-            defaultType = "IDictionary<string, object>";
+            defaultType = "Dictionary<string, object>";
         }
 
         return new ConsumerGenerationConfig

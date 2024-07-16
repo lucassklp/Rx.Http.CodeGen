@@ -34,8 +34,11 @@ namespace Rx.Http.CodeGen
             string type = TypeMapping.GetAssociatedType(element);
             if (type == "List<object>")
             {
-                var subtype = TypeMapping.GetAssociatedType(element.Items);
-                type = $"List<{subtype}>";
+                if(element.Items is not null)
+                {
+                    var subtype = TypeMapping.GetAssociatedType(element.Items);
+                    type = $"List<{subtype}>";
+                }
             }
 
             if(TypeMapping.HasUnderlyingType(type))
@@ -48,6 +51,11 @@ namespace Rx.Http.CodeGen
                 return config.Type;
             }
 
+            if(type == "List<object>")
+            {
+                return $"List<{config.Type}>";
+            }
+
             return type;
         }
         
@@ -55,6 +63,7 @@ namespace Rx.Http.CodeGen
         {
             var modelClassGen = new ClassGen(name: name.ToPascalCase())
                 .Namespace($"{config.Namespace}.Models")
+                .Using("Newtonsoft.Json")
                 .Public();
 
             void AddProperties(IDictionary<string, OpenApiSchema> properties)
@@ -71,7 +80,8 @@ namespace Rx.Http.CodeGen
                     }
 
                     var propertyGen = new PropertyGen(name: propertyName, type: type!)
-                        .Public();
+                        .Public()
+                        .WithAttributes($"""[JsonProperty("{property.Key}")]""");
 
                     modelClassGen.WithProperty(propertyGen);
                 }
@@ -182,7 +192,9 @@ namespace Rx.Http.CodeGen
 
             var body = string.Empty;
 
-            var methodGen = new MethodGen(name: operation.OperationId.ToPascalCase(), returnType: $"IObservable<{type ?? "RxHttpResponse"}>")
+            var alternativeName = httpMethod.ToPascalCase() + route.ToPascalCase().Replace("/", string.Empty);
+
+            var methodGen = new MethodGen(name: operation.OperationId?.ToPascalCase() ?? alternativeName, returnType: $"IObservable<{type ?? "RxHttpResponse"}>")
                 .Public();
 
             var @base = GetBase(httpMethod);
@@ -210,7 +222,15 @@ namespace Rx.Http.CodeGen
                 string bodyType = "object";
                 string bodyArgument = "body";
 
-                if (operation.RequestBody.Content.Any(x => x.Key == "application/x-www-form-urlencoded"))
+                if (operation.RequestBody.Content.Any(x => x.Key == "application/json"))
+                {
+                    var bodySchema = operation.RequestBody.Content["application/json"].Schema;
+                    bodyType = ExtractType(bodySchema) ?? "object";
+                    bodyArgument = "body";
+
+                    methodGen.WithParameter(bodyType, "body");
+                }
+                else if (operation.RequestBody.Content.Any(x => x.Key == "application/x-www-form-urlencoded"))
                 {
                     var bodySchema = operation.RequestBody.Content["application/x-www-form-urlencoded"].Schema;
                     var objectMap = new List<string>();
@@ -233,27 +253,15 @@ namespace Rx.Http.CodeGen
                     })
                     """;
                 }
-
-                if (operation.RequestBody.Content.Any(x => x.Key == "multipart/form-data"))
+                else if (operation.RequestBody.Content.Any(x => x.Key == "multipart/form-data"))
                 {
                     methodGen.WithParameter("MultipartFormDataContent", "body");
                 }
-
-                if (operation.RequestBody.Content.Any(x => x.Key == "text/plain"))
+                else if (operation.RequestBody.Content.Any(x => x.Key == "text/plain"))
                 {
                     methodGen.WithParameter("string", "body");
                 }
 
-
-                if (operation.RequestBody.Content.Any(x => x.Key == "application/json"))
-                {
-                    var bodySchema = operation.RequestBody.Content["application/json"].Schema;
-                    bodyType = ExtractType(bodySchema) ?? "object";
-                    bodyArgument = "body";
-
-                    methodGen.WithParameter(bodyType, "body");
-                }
-                
                 var options = GenerateOptions(operation);
 
                 if (options is null)
@@ -293,7 +301,8 @@ namespace Rx.Http.CodeGen
         {
             var operationIds = openApiDocument.Paths.SelectMany(c => c.Value.Operations)
                 .Select(x => x.Value)
-                .Select(x => x.OperationId.ToPascalCase());
+                .Select(x => x.OperationId?.ToPascalCase())
+                .Where(x => !string.IsNullOrWhiteSpace(x));
             
             return operationIds.Any(x => x == httpMethod.ToPascalCase()) ? "base." : string.Empty;
         }
@@ -322,8 +331,10 @@ namespace Rx.Http.CodeGen
             {
                 foreach (var operation in path.Value.Operations)
                 {
+
                     var method = GenerateMethod(path.Key.ToCamelCase(), path.Value, operation.Key.GetDisplayName(), operation.Value);
                     classGen.WithMethod(method);
+                    
                 }
             }
 

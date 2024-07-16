@@ -21,7 +21,7 @@ public class PetstoreGenerationTests : FileGenerationTests
     {
         var consumerGen = new ConsumerGenerator(consumerOptions);
 
-        var generatedCode = consumerGen.ConsumerClassGen.GenerateCode().Replace("\r\n", "\n");
+        var generatedCode = consumerGen.ConsumerClassGen.GenerateCode().Replace("\r\n", "\n") + "\n";
         var expected = ReadOutputFile(consumerOptions.Namespace!, "PetstoreConsumer.cs").Replace("\r\n", "\n");
 
         Assert.Equal(expected, generatedCode);
@@ -33,7 +33,7 @@ public class PetstoreGenerationTests : FileGenerationTests
         var consumerGen = new ConsumerGenerator(consumerOptions);
 
         consumerGen.ModelClassesGen.ForEach(modelClassGen => {
-            var generatedCode = modelClassGen.GenerateCode().Replace("\r\n", "\n");
+            var generatedCode = modelClassGen.GenerateCode().Replace("\r\n", "\n") + "\n";
             var expected = ReadModelFile(consumerOptions.Namespace!, $"{modelClassGen.ClassName}.cs").Replace("\r\n", "\n");
 
             Assert.Equal(expected, generatedCode);

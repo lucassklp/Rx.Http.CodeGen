@@ -48,7 +48,7 @@ namespace Codacy
                 options.AddQueryString("deleteIssuesForDisabledPatterns", deleteIssuesForDisabledPatterns);
             });
         }
-        public IObservable<ConfiguredPatternsListResponse> ListRepositoryToolPatterns(string provider, string remoteOrganizationName, string repositoryName, string toolUuid, string languages, string categories, string severityLevels, string search, bool enabled, string sort, string direction, string cursor, int limit)
+        public IObservable<ConfiguredPatternsListResponse> ListRepositoryToolPatterns(string provider, string remoteOrganizationName, string repositoryName, string toolUuid, string languages, string categories, string severityLevels, string search, bool enabled, bool recommended, string sort, string direction, string cursor, int limit)
         {
             return Get<ConfiguredPatternsListResponse>($"/analysis/organizations/{provider}/{remoteOrganizationName}/repositories/{repositoryName}/tools/{toolUuid}/patterns", null, options => {
                 options.AddQueryString("languages", languages);
@@ -56,6 +56,7 @@ namespace Codacy
                 options.AddQueryString("severityLevels", severityLevels);
                 options.AddQueryString("search", search);
                 options.AddQueryString("enabled", enabled);
+                options.AddQueryString("recommended", recommended);
                 options.AddQueryString("sort", sort);
                 options.AddQueryString("direction", direction);
                 options.AddQueryString("cursor", cursor);
