@@ -10,6 +10,7 @@ public class DocuSignGenerationTests : FileGenerationTests
         {
             OpenApiDefinition = ReadInputFile("docusign.json"),
             Path = "",
+            DocumentType = "json",
             ConsumerName = "DocuSign",
             Type = "object",
             Namespace = "DocuSign"

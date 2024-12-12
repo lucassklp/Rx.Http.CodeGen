@@ -5,18 +5,15 @@ namespace Rx.Http.CodeGen
 {
     static class TypeMapping
     {
-        private static Dictionary<string, string> TypesMap = new()
+        private static Dictionary<JsonSchemaType, string> TypesMap = new()
         {
-            { "int16", "short" },
-            { "int32", "int" },
-            { "int64", "long" },
-            { "boolean", "bool" },
-            { "date-time", "DateTime" },
-            { "string", "string" },
-            { "integer", "int" },
-            { "array", "List<object>" },
-            { "object", "object" },
-            { "file", "FileStream" }
+            { JsonSchemaType.Null, "object" },
+            { JsonSchemaType.Boolean, "bool" },
+            { JsonSchemaType.Integer, "int" },
+            { JsonSchemaType.Number, "double" },
+            { JsonSchemaType.String, "string" },
+            { JsonSchemaType.Object, "object" },
+            { JsonSchemaType.Array, "List<object>" }
         };
 
         private static List<string> UnderlyingMap = new()
@@ -26,14 +23,14 @@ namespace Rx.Http.CodeGen
 
         public static string GetAssociatedType(OpenApiSchema element)
         {
-            if(element.Type == "number")
+            if(element.Type == JsonSchemaType.Number)
             {
                 return string.IsNullOrEmpty(element.Format) ? "double" : element.Format;
             }
 
-            if(!string.IsNullOrEmpty(element.Type) && TypesMap.ContainsKey(element.Type))
+            if(element.Type is JsonSchemaType jsonType && TypesMap.ContainsKey(jsonType))
             {
-                var type = TypesMap[element.Type];
+                var type = TypesMap[jsonType];
                 if (type == "object")
                 {
                     return element?.Reference?.Id?.ToPascalCase() ?? "object";
@@ -41,7 +38,7 @@ namespace Rx.Http.CodeGen
                 return type;
             }
 
-            if(string.IsNullOrWhiteSpace(element?.Type) && !string.IsNullOrWhiteSpace(element?.Reference?.Id))
+            if(element?.Type is null && !string.IsNullOrWhiteSpace(element?.Reference?.Id))
             {
                 return element.Reference.Id.ToPascalCase();
             }
@@ -53,6 +50,5 @@ namespace Rx.Http.CodeGen
         {
             return UnderlyingMap.Contains(type);
         }
-
     }
 }

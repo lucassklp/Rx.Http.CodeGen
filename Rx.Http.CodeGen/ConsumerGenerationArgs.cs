@@ -10,6 +10,9 @@ namespace Rx.Http.CodeGen
         [Option('u', "url", Required = false, HelpText = "Set the OpenApi definition url location")]
         public string? Url { get; set; }
 
+        [Option('d', "document type", Required = false, HelpText = "Force to use a document type. Possible values: 'json' or 'yaml'. default: Extension from url or file. If undefined, json by default.")]
+        public string? DocumentType { get; set; }
+
         [Option('n', "namespace", Required = true, HelpText = "The name of the namespace of generated source")]
         public required string Namespace { get; set; }
 

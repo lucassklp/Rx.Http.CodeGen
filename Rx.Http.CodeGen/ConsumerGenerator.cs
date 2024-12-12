@@ -2,6 +2,7 @@
 using Fluent.CodeGen;
 using Microsoft.OpenApi.Extensions;
 using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi.Reader;
 using Microsoft.OpenApi.Readers;
 using System.CodeDom.Compiler;
 using System.Text;
@@ -19,7 +20,8 @@ namespace Rx.Http.CodeGen
         public ConsumerGenerator(ConsumerGenerationConfig config)
         {
             this.config = config;
-            openApiDocument = new OpenApiStringReader().Read(config.OpenApiDefinition, out var _);
+            OpenApiReaderRegistry.RegisterReader(OpenApiConstants.Yaml, new OpenApiYamlReader());
+            openApiDocument = OpenApiDocument.Parse(config.OpenApiDefinition, config.DocumentType, new OpenApiReaderSettings()).Document;
             ModelClassesGen = GenerateModelsClassGen();
             ConsumerClassGen = GenerateConsumer();
         }
@@ -108,20 +110,23 @@ namespace Rx.Http.CodeGen
                     .WithBase("httpClient", "null");
 
 
-                var body = new StringBuilder();
-                if (openApi.Servers.Any())
+                if(openApi is not null)
                 {
-                    body.AppendLine($"""httpClient.BaseAddress = new Uri("{ openApi.Servers.First().Url }");""");
+                    var body = new StringBuilder();
+
+                    if (openApi.Servers?.Any() ?? false)
+                    {
+                        body.AppendLine($"""httpClient.BaseAddress = new Uri("{ openApi.Servers.First().Url }");""");
+                    }
+
+                    if(openApi.Components?.SecuritySchemes?.Any(x => x.Value.Type == SecuritySchemeType.Http && x.Value.Scheme == "bearer") ?? false)
+                    {
+                        body.AppendLine($"""RequestInterceptors.Add(new {config.ConsumerName}TokenInterceptor());""");
+                        TokenInterceptorClassGen = GenerateTokenInterceptor();
+                    }
+
+                    ctor.WithBody(body.ToString());
                 }
-
-                if(openApi.Components.SecuritySchemes.Any(x => x.Value.Type == SecuritySchemeType.Http && x.Value.Scheme == "bearer"))
-                {
-                    body.AppendLine($"""RequestInterceptors.Add(new {config.ConsumerName}TokenInterceptor());""");
-                    TokenInterceptorClassGen = GenerateTokenInterceptor();
-                }
-
-                ctor.WithBody(body.ToString());
-
             });
         }
 
@@ -331,7 +336,6 @@ namespace Rx.Http.CodeGen
             {
                 foreach (var operation in path.Value.Operations)
                 {
-
                     var method = GenerateMethod(path.Key.ToCamelCase(), path.Value, operation.Key.GetDisplayName(), operation.Value);
                     classGen.WithMethod(method);
                     
@@ -345,9 +349,9 @@ namespace Rx.Http.CodeGen
 
         private List<ClassGen> GenerateModelsClassGen()
         {
-            return openApiDocument.Components.Schemas
+            return openApiDocument?.Components?.Schemas?
                 .Select(schema => GenerateModelClasses(schema.Key, schema.Value))
-                .ToList();
+                .ToList() ?? new List<ClassGen>();
         }
 
         private void GenerateModelFiles(ClassGen classGen)
