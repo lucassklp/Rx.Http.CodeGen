@@ -2,7 +2,7 @@ using Newtonsoft.Json;
 
 namespace Codacy.Models
 {
-    public class ConfigurationStatusCategory
+    public class EnterpriseUserRole
     {
     }
 }

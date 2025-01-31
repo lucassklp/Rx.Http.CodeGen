@@ -2,7 +2,7 @@ using Newtonsoft.Json;
 
 namespace Codacy.Models
 {
-    public class CommitUuid
+    public class SearchSbomDependenciesBody
     {
     }
 }

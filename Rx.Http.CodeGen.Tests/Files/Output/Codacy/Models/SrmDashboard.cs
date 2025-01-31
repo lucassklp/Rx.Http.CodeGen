@@ -6,6 +6,8 @@ namespace Codacy.Models
     {
         [JsonProperty("totalOpen")]
         public int TotalOpen { get; set; }
+        [JsonProperty("totalNewThisWeek")]
+        public int TotalNewThisWeek { get; set; }
         [JsonProperty("totalClosed")]
         public int TotalClosed { get; set; }
         [JsonProperty("onTrack")]

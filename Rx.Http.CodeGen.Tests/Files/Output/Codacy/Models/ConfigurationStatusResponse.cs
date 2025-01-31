@@ -5,7 +5,7 @@ namespace Codacy.Models
     public class ConfigurationStatusResponse
     {
         [JsonProperty("statuses")]
-        public List<ConfigurationStatus> Statuses { get; set; }
+        public List<string> Statuses { get; set; }
         [JsonProperty("metadata")]
         public object Metadata { get; set; }
     }

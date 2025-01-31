@@ -14,5 +14,7 @@ namespace Codacy.Models
         public List<string> Categories { get; set; }
         [JsonProperty("scanTypes")]
         public List<string> ScanTypes { get; set; }
+        [JsonProperty("segments")]
+        public List<int> Segments { get; set; }
     }
 }

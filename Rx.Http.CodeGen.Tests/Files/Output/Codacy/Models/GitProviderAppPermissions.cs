@@ -6,5 +6,7 @@ namespace Codacy.Models
     {
         [JsonProperty("contentPermission")]
         public bool ContentPermission { get; set; }
+        [JsonProperty("customPropertiesPermission")]
+        public bool CustomPropertiesPermission { get; set; }
     }
 }

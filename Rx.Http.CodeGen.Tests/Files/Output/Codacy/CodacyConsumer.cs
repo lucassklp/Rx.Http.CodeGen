@@ -16,13 +16,14 @@ namespace Codacy
         {
             return Get<Models.Version>($"/version");
         }
-        public IObservable<RepositoryWithAnalysisListResponse> ListOrganizationRepositoriesWithAnalysis(string provider, string remoteOrganizationName, string cursor, int limit, string search, string repositories)
+        public IObservable<RepositoryWithAnalysisListResponse> ListOrganizationRepositoriesWithAnalysis(string provider, string remoteOrganizationName, string cursor, int limit, string search, string repositories, string segments)
         {
             return Get<RepositoryWithAnalysisListResponse>($"/analysis/organizations/{provider}/{remoteOrganizationName}/repositories", null, options => {
                 options.AddQueryString("cursor", cursor);
                 options.AddQueryString("limit", limit);
                 options.AddQueryString("search", search);
                 options.AddQueryString("repositories", repositories);
+                options.AddQueryString("segments", segments);
             });
         }
         public IObservable<RepositoryWithAnalysisListResponse> SearchOrganizationRepositoriesWithAnalysis(SearchOrganizationRepositoriesWithAnalysis body, string provider, string remoteOrganizationName, string cursor, int limit)
@@ -42,11 +43,13 @@ namespace Codacy
         {
             return Get<AnalysisToolsResponse>($"/analysis/organizations/{provider}/{remoteOrganizationName}/repositories/{repositoryName}/tools");
         }
-        public IObservable<RxHttpResponse> ConfigureTool(ConfigureToolBody body, string provider, string remoteOrganizationName, string repositoryName, string toolUuid, bool deleteIssuesForDisabledPatterns)
+        public IObservable<RepositoryConflictsResponse> ListRepositoryToolConflicts(string provider, string remoteOrganizationName, string repositoryName)
         {
-            return Patch($"/analysis/organizations/{provider}/{remoteOrganizationName}/repositories/{repositoryName}/tools/{toolUuid}", body, options => {
-                options.AddQueryString("deleteIssuesForDisabledPatterns", deleteIssuesForDisabledPatterns);
-            });
+            return Get<RepositoryConflictsResponse>($"/analysis/organizations/{provider}/{remoteOrganizationName}/repositories/{repositoryName}/tools/conflicts");
+        }
+        public IObservable<RxHttpResponse> ConfigureTool(ConfigureToolBody body, string provider, string remoteOrganizationName, string repositoryName, string toolUuid)
+        {
+            return Patch($"/analysis/organizations/{provider}/{remoteOrganizationName}/repositories/{repositoryName}/tools/{toolUuid}", body);
         }
         public IObservable<ConfiguredPatternsListResponse> ListRepositoryToolPatterns(string provider, string remoteOrganizationName, string repositoryName, string toolUuid, string languages, string categories, string severityLevels, string search, bool enabled, bool recommended, string sort, string direction, string cursor, int limit)
         {
@@ -63,14 +66,34 @@ namespace Codacy
                 options.AddQueryString("limit", limit);
             });
         }
-        public IObservable<RxHttpResponse> UpdateRepositoryToolPatterns(UpdatePatternsBody body, string provider, string remoteOrganizationName, string repositoryName, string toolUuid, string languages, string categories, string severityLevels, string search)
+        public IObservable<RxHttpResponse> UpdateRepositoryToolPatterns(UpdatePatternsBody body, string provider, string remoteOrganizationName, string repositoryName, string toolUuid, string languages, string categories, string severityLevels, string search, bool recommended)
         {
             return Patch($"/analysis/organizations/{provider}/{remoteOrganizationName}/repositories/{repositoryName}/tools/{toolUuid}/patterns", body, options => {
                 options.AddQueryString("languages", languages);
                 options.AddQueryString("categories", categories);
                 options.AddQueryString("severityLevels", severityLevels);
                 options.AddQueryString("search", search);
+                options.AddQueryString("recommended", recommended);
             });
+        }
+        public IObservable<ConfiguredPatternResponse> GetRepositoryToolPattern(string provider, string remoteOrganizationName, string repositoryName, string toolUuid, string patternId)
+        {
+            return Get<ConfiguredPatternResponse>($"/analysis/organizations/{provider}/{remoteOrganizationName}/repositories/{repositoryName}/tools/{toolUuid}/patterns/{patternId}");
+        }
+        public IObservable<ToolPatternsOverviewResponse> ToolPatternsOverview(string provider, string remoteOrganizationName, string repositoryName, string toolUuid, string languages, string categories, string severityLevels, string search, bool enabled, bool recommended)
+        {
+            return Get<ToolPatternsOverviewResponse>($"/analysis/organizations/{provider}/{remoteOrganizationName}/repositories/{repositoryName}/tools/{toolUuid}/patterns/overview", null, options => {
+                options.AddQueryString("languages", languages);
+                options.AddQueryString("categories", categories);
+                options.AddQueryString("severityLevels", severityLevels);
+                options.AddQueryString("search", search);
+                options.AddQueryString("enabled", enabled);
+                options.AddQueryString("recommended", recommended);
+            });
+        }
+        public IObservable<RepositoryToolConflictsResponse> ListRepositoryToolPatternConflicts(string provider, string remoteOrganizationName, string repositoryName, string toolUuid)
+        {
+            return Get<RepositoryToolConflictsResponse>($"/analysis/organizations/{provider}/{remoteOrganizationName}/repositories/{repositoryName}/tools/{toolUuid}/conflicts");
         }
         public IObservable<FirstAnalysisOverviewResponse> GetFirstAnalysisOverview(string provider, string remoteOrganizationName, string repositoryName, string branch)
         {
@@ -372,9 +395,9 @@ namespace Codacy
                 options.AddQueryString("limit", limit);
             });
         }
-        public IObservable<RxHttpResponse> DeleteIntegration(string accountProvider)
+        public IObservable<RxHttpResponse> DeleteIntegration(string provider)
         {
-            return Delete($"/user/integrations/{accountProvider}");
+            return Delete($"/user/integrations/{provider}");
         }
         public IObservable<OrganizationWithMetaResponse> GetOrganization(string provider, string remoteOrganizationName)
         {
@@ -424,7 +447,7 @@ namespace Codacy
         {
             return Post($"/organizations/{provider}/{remoteOrganizationName}/repositories/{repositoryName}/integrations/refreshProvider");
         }
-        public IObservable<RepositoryListResponse> ListOrganizationRepositories(string provider, string remoteOrganizationName, string cursor, int limit, string search, string filter, string languages)
+        public IObservable<RepositoryListResponse> ListOrganizationRepositories(string provider, string remoteOrganizationName, string cursor, int limit, string search, string filter, string languages, string segments)
         {
             return Get<RepositoryListResponse>($"/organizations/{provider}/{remoteOrganizationName}/repositories", null, options => {
                 options.AddQueryString("cursor", cursor);
@@ -432,6 +455,7 @@ namespace Codacy
                 options.AddQueryString("search", search);
                 options.AddQueryString("filter", filter);
                 options.AddQueryString("languages", languages);
+                options.AddQueryString("segments", segments);
             });
         }
         public IObservable<OrganizationOnboardingProgressResponse> RetrieveOrganizationOnboardingProgress(string provider, string remoteOrganizationName)
@@ -518,6 +542,10 @@ namespace Codacy
         {
             return Post($"/organizations/{provider}/{remoteOrganizationName}/repositories/{repositoryName}/branches/{branchName}/setDefault");
         }
+        public IObservable<BranchRequiredChecksResponse> GetBranchRequiredChecks(string provider, string remoteOrganizationName, string repositoryName, string branchName)
+        {
+            return Get<BranchRequiredChecksResponse>($"/organizations/{provider}/{remoteOrganizationName}/repositories/{repositoryName}/branches/{branchName}/requiredChecks");
+        }
         public IObservable<RxHttpResponse> CreateBadgePullRequest(string remoteOrganizationName, string repositoryName)
         {
             return Post($"/organizations/gh/{remoteOrganizationName}/repositories/{repositoryName}/badge");
@@ -559,6 +587,22 @@ namespace Codacy
         public IObservable<AddOrganizationResponse> AddOrganization(AddOrganizationBody body)
         {
             return Post<AddOrganizationResponse>($"/organizations", body);
+        }
+        public IObservable<RxHttpResponse> DeleteEnterpriseToken(string provider)
+        {
+            return Delete($"/user/enterprise/integrations/{provider}");
+        }
+        public IObservable<RxHttpResponse> CleanEnterpriseCache(string provider)
+        {
+            return Post($"/enterprises/{provider}/cache/clean");
+        }
+        public IObservable<EnterpriseAccountTokenListResponse> ListUserEnterpriseProviderTokens()
+        {
+            return Get<EnterpriseAccountTokenListResponse>($"/user/enterprise/integrations");
+        }
+        public IObservable<RxHttpResponse> AddEnterpriseToken(AddEnterpriseAccountTokenBody body)
+        {
+            return Post($"/user/enterprise/integrations", body);
         }
         public IObservable<ApiTokenListResponse> GetUserApiTokens(string cursor, int limit)
         {
@@ -643,6 +687,34 @@ namespace Codacy
         {
             return Get<MetricsToolListResponse>($"/metricsTools");
         }
+        public IObservable<RxHttpResponse> InitiateMetricsForOrganization(string provider, string remoteOrganizationName)
+        {
+            return Post($"/organizations/{provider}/{remoteOrganizationName}/metrics/start");
+        }
+        public IObservable<OrganizationReadyMetricsResponse> ReadyMetricsForOrganization(string provider, string remoteOrganizationName)
+        {
+            return Get<OrganizationReadyMetricsResponse>($"/organizations/{provider}/{remoteOrganizationName}/metrics/ready");
+        }
+        public IObservable<MetricValueResponse> RetrieveLatestMetricValue(MetricFilter body, string provider, string remoteOrganizationName, string metricName)
+        {
+            return Post<MetricValueResponse>($"/organizations/{provider}/{remoteOrganizationName}/metrics/{metricName}/latest", body);
+        }
+        public IObservable<PeriodGroupedMetricValuesResponse> RetrieveLatestMetricGroupedValues(GroupMetricFilter body, string provider, string remoteOrganizationName, string metricName)
+        {
+            return Post<PeriodGroupedMetricValuesResponse>($"/organizations/{provider}/{remoteOrganizationName}/metrics/{metricName}/latestGrouped", body);
+        }
+        public IObservable<MetricValueResponse> RetrieveValueForPeriod(PeriodMetricFilterBody body, string provider, string remoteOrganizationName, string metricName)
+        {
+            return Post<MetricValueResponse>($"/organizations/{provider}/{remoteOrganizationName}/metrics/{metricName}/period", body);
+        }
+        public IObservable<PeriodGroupedMetricValuesResponse> RetrieveGroupedValuesForPeriod(PeriodGroupMetricFilterBody body, string provider, string remoteOrganizationName, string metricName)
+        {
+            return Post<PeriodGroupedMetricValuesResponse>($"/organizations/{provider}/{remoteOrganizationName}/metrics/{metricName}/periodGrouped", body);
+        }
+        public IObservable<TimerangeMetricValuesResponse> RetrieveTimerangeMetricValues(TimerangeMetricFilterBody body, string provider, string remoteOrganizationName, string metricName)
+        {
+            return Post<TimerangeMetricValuesResponse>($"/organizations/{provider}/{remoteOrganizationName}/metrics/{metricName}/timerange", body);
+        }
         public IObservable<FileListResponse> ListFiles(string provider, string remoteOrganizationName, string repositoryName, string branch, string search, string sort, string direction, string cursor, int limit)
         {
             return Get<FileListResponse>($"/organizations/{provider}/{remoteOrganizationName}/repositories/{repositoryName}/files", null, options => {
@@ -695,6 +767,10 @@ namespace Codacy
         {
             return Delete($"/organizations/{provider}/{remoteOrganizationName}/codingStandards/{codingStandardId}");
         }
+        public IObservable<CodingStandardResponse> DuplicateCodingStandard(string provider, string remoteOrganizationName, int codingStandardId)
+        {
+            return Post<CodingStandardResponse>($"/organizations/{provider}/{remoteOrganizationName}/codingStandards/{codingStandardId}/duplicate");
+        }
         public IObservable<CodingStandardToolsListResponse> ListCodingStandardTools(string provider, string remoteOrganizationName, int codingStandardId)
         {
             return Get<CodingStandardToolsListResponse>($"/organizations/{provider}/{remoteOrganizationName}/codingStandards/{codingStandardId}/tools");
@@ -703,24 +779,40 @@ namespace Codacy
         {
             return Post($"/organizations/{provider}/{remoteOrganizationName}/codingStandards/{codingStandardId}/setDefault", body);
         }
-        public IObservable<ConfiguredPatternsListResponse> ListCodingStandardPatterns(string provider, string remoteOrganizationName, int codingStandardId, string toolUuid, string languages, string categories, string severityLevels, string sort, string direction, string cursor, int limit)
+        public IObservable<ConfiguredPatternsListResponse> ListCodingStandardPatterns(string provider, string remoteOrganizationName, int codingStandardId, string toolUuid, string languages, string categories, string severityLevels, string search, bool enabled, bool recommended, string sort, string direction, string cursor, int limit)
         {
             return Get<ConfiguredPatternsListResponse>($"/organizations/{provider}/{remoteOrganizationName}/codingStandards/{codingStandardId}/tools/{toolUuid}/patterns", null, options => {
                 options.AddQueryString("languages", languages);
                 options.AddQueryString("categories", categories);
                 options.AddQueryString("severityLevels", severityLevels);
+                options.AddQueryString("search", search);
+                options.AddQueryString("enabled", enabled);
+                options.AddQueryString("recommended", recommended);
                 options.AddQueryString("sort", sort);
                 options.AddQueryString("direction", direction);
                 options.AddQueryString("cursor", cursor);
                 options.AddQueryString("limit", limit);
             });
         }
-        public IObservable<RxHttpResponse> UpdateCodingStandardPatterns(UpdatePatternsBody body, string provider, string remoteOrganizationName, int codingStandardId, string toolUuid, string languages, string categories, string severityLevels)
+        public IObservable<ToolPatternsOverviewResponse> CodingStandardToolPatternsOverview(string provider, string remoteOrganizationName, int codingStandardId, string toolUuid, string languages, string categories, string severityLevels, string search, bool enabled, bool recommended)
+        {
+            return Get<ToolPatternsOverviewResponse>($"/organizations/{provider}/{remoteOrganizationName}/codingStandards/{codingStandardId}/tools/{toolUuid}/patterns/overview", null, options => {
+                options.AddQueryString("languages", languages);
+                options.AddQueryString("categories", categories);
+                options.AddQueryString("severityLevels", severityLevels);
+                options.AddQueryString("search", search);
+                options.AddQueryString("enabled", enabled);
+                options.AddQueryString("recommended", recommended);
+            });
+        }
+        public IObservable<RxHttpResponse> UpdateCodingStandardPatterns(UpdatePatternsBody body, string provider, string remoteOrganizationName, int codingStandardId, string toolUuid, string languages, string categories, string severityLevels, string search, bool recommended)
         {
             return Post($"/organizations/{provider}/{remoteOrganizationName}/codingStandards/{codingStandardId}/tools/{toolUuid}/patterns/update", body, options => {
                 options.AddQueryString("languages", languages);
                 options.AddQueryString("categories", categories);
                 options.AddQueryString("severityLevels", severityLevels);
+                options.AddQueryString("search", search);
+                options.AddQueryString("recommended", recommended);
             });
         }
         public IObservable<RxHttpResponse> UpdateCodingStandardToolConfiguration(ToolConfiguration body, string provider, string remoteOrganizationName, int codingStandardId, string toolUuid)
@@ -737,10 +829,6 @@ namespace Codacy
         public IObservable<ApplyCodingStandardToRepositoriesResultResponse> ApplyCodingStandardToRepositories(ApplyCodingStandardToRepositoriesBody body, string provider, string remoteOrganizationName, int codingStandardId)
         {
             return Patch<ApplyCodingStandardToRepositoriesResultResponse>($"/organizations/{provider}/{remoteOrganizationName}/codingStandards/{codingStandardId}/repositories", body);
-        }
-        public IObservable<RxHttpResponse> UnlinkRepositoryFromCodingStandard(string provider, string remoteOrganizationName, string repositoryName)
-        {
-            return Delete($"/organizations/{provider}/{remoteOrganizationName}/repositories/{repositoryName}/codingStandard");
         }
         public IObservable<RxHttpResponse> SetDefaultGatePolicy(string provider, string remoteOrganizationName, int gatePolicyId)
         {
@@ -792,10 +880,6 @@ namespace Codacy
         {
             return Put($"/organizations/{provider}/{remoteOrganizationName}/gatePolicies/{gatePolicyId}/repositories", body);
         }
-        public IObservable<RxHttpResponse> CreateOrganizationHooks(string provider, string remoteOrganizationName)
-        {
-            return Post($"/organizations/{provider}/{remoteOrganizationName}/settings/hooks");
-        }
         public IObservable<ApplyCodingStandardToRepositoriesResultResponse> PromoteDraftCodingStandard(string provider, string remoteOrganizationName, int codingStandardId)
         {
             return Post<ApplyCodingStandardToRepositoriesResultResponse>($"/organizations/{provider}/{remoteOrganizationName}/codingStandards/{codingStandardId}/promote");
@@ -844,6 +928,14 @@ namespace Codacy
                 options.AddQueryString("category", category);
                 options.AddQueryString("scanType", scanType);
             });
+        }
+        public IObservable<SrmItemResponse> IgnoreSecurityItem(IgnoreSrmItemBody body, string provider, string remoteOrganizationName, string srmItemId)
+        {
+            return Post<SrmItemResponse>($"/organizations/{provider}/{remoteOrganizationName}/security/items/{srmItemId}/ignore", body);
+        }
+        public IObservable<SrmItemResponse> UnignoreSecurityItem(string provider, string remoteOrganizationName, string srmItemId)
+        {
+            return Post<SrmItemResponse>($"/organizations/{provider}/{remoteOrganizationName}/security/items/{srmItemId}/unignore");
         }
         public IObservable<SrmItemResponse> GetSecurityItem(string provider, string remoteOrganizationName, string srmItemId)
         {
@@ -909,16 +1001,38 @@ namespace Codacy
         {
             return Delete($"/organizations/{provider}/{remoteOrganizationName}/security/managers/{userId}");
         }
-        public IObservable<SecurityRepositoriesResponse> ListSecurityRepositories(string provider, string remoteOrganizationName, string cursor, int limit)
+        public IObservable<SecurityRepositoriesResponse> ListSecurityRepositories(string provider, string remoteOrganizationName, string cursor, int limit, string segments)
         {
             return Get<SecurityRepositoriesResponse>($"/organizations/{provider}/{remoteOrganizationName}/security/repositories", null, options => {
                 options.AddQueryString("cursor", cursor);
                 options.AddQueryString("limit", limit);
+                options.AddQueryString("segments", segments);
             });
         }
         public IObservable<SecurityCategoriesResponse> ListSecurityCategories(string provider, string remoteOrganizationName, string cursor, int limit)
         {
             return Get<SecurityCategoriesResponse>($"/organizations/{provider}/{remoteOrganizationName}/security/categories", null, options => {
+                options.AddQueryString("cursor", cursor);
+                options.AddQueryString("limit", limit);
+            });
+        }
+        public IObservable<SearchSbomDependenciesResponse> SearchSbomDependencies(SearchSbomDependenciesBody body, string provider, string remoteOrganizationName, string cursor, int limit)
+        {
+            return Post<SearchSbomDependenciesResponse>($"/organizations/{provider}/{remoteOrganizationName}/sbom/dependencies/search", body, options => {
+                options.AddQueryString("cursor", cursor);
+                options.AddQueryString("limit", limit);
+            });
+        }
+        public IObservable<SearchRepositoriesOfSbomDependencyResponse> SearchRepositoriesOfSbomDependency(SearchRepositoriesOfSbomDependencyBody body, string provider, string remoteOrganizationName, string cursor, int limit)
+        {
+            return Post<SearchRepositoriesOfSbomDependencyResponse>($"/organizations/{provider}/{remoteOrganizationName}/sbom/dependencies/repositories/search", body, options => {
+                options.AddQueryString("cursor", cursor);
+                options.AddQueryString("limit", limit);
+            });
+        }
+        public IObservable<SearchSbomRepositoriesResponse> SearchSbomRepositories(SearchSbomRepositoriesBody body, string provider, string remoteOrganizationName, string cursor, int limit)
+        {
+            return Post<SearchSbomRepositoriesResponse>($"/organizations/{provider}/{remoteOrganizationName}/sbom/repositories/search", body, options => {
                 options.AddQueryString("cursor", cursor);
                 options.AddQueryString("limit", limit);
             });
@@ -973,6 +1087,10 @@ namespace Codacy
         {
             return Get<CommitDetails>($"/organizations/{provider}/{remoteOrganizationName}/commit/{commitId}");
         }
+        public IObservable<CommitDetailsV2> GetCommitDetailsByCommitId(int commitId)
+        {
+            return Get<CommitDetailsV2>($"/commits/{commitId}");
+        }
         public IObservable<HeartbeatResponse> Heartbeat(HeartbeatRequest body)
         {
             return Post<HeartbeatResponse>($"/session/heartbeat", body);
@@ -993,9 +1111,102 @@ namespace Codacy
         {
             return Get<QuickfixPatchResponse>($"/analysis/organizations/{provider}/{remoteOrganizationName}/repositories/{repositoryName}/pullRequests/{pullRequestNumber}/issues/patch");
         }
-        public IObservable<List<AuditLog>> ListAuditLogsForOrganization(string provider, string remoteOrganizationName)
+        public IObservable<List<AuditLog>> ListAuditLogsForOrganization(string provider, string remoteOrganizationName, int from, int to)
         {
-            return Get<List<AuditLog>>($"/organizations/{provider}/{remoteOrganizationName}/audit");
+            return Get<List<AuditLog>>($"/organizations/{provider}/{remoteOrganizationName}/audit", null, options => {
+                options.AddQueryString("from", from);
+                options.AddQueryString("to", to);
+            });
+        }
+        public IObservable<SegmentsSyncStatusResponse> GetSegmentsSyncStatus(string provider, string remoteOrganizationName)
+        {
+            return Get<SegmentsSyncStatusResponse>($"/organizations/{provider}/{remoteOrganizationName}/segments/sync");
+        }
+        public IObservable<RxHttpResponse> SyncSegments(string provider, string remoteOrganizationName)
+        {
+            return Post($"/organizations/{provider}/{remoteOrganizationName}/segments/sync");
+        }
+        public IObservable<SegmentsKeysResponse> GetSegmentsKeys(string provider, string remoteOrganizationName, string cursor, int limit, string search)
+        {
+            return Get<SegmentsKeysResponse>($"/organizations/{provider}/{remoteOrganizationName}/segments/keys", null, options => {
+                options.AddQueryString("cursor", cursor);
+                options.AddQueryString("limit", limit);
+                options.AddQueryString("search", search);
+            });
+        }
+        public IObservable<SegmentsKeysIdsResponse> GetSegmentsKeysWithIds(string provider, string remoteOrganizationName, string cursor, int limit, string search)
+        {
+            return Get<SegmentsKeysIdsResponse>($"/organizations/{provider}/{remoteOrganizationName}/segments/keys/ids", null, options => {
+                options.AddQueryString("cursor", cursor);
+                options.AddQueryString("limit", limit);
+                options.AddQueryString("search", search);
+            });
+        }
+        public IObservable<SegmentsResponseDeprecated> GetSegmentsValues(string provider, string remoteOrganizationName, string cursor, string segmentKey, string search, int limit)
+        {
+            return Get<SegmentsResponseDeprecated>($"/organizations/{provider}/{remoteOrganizationName}/segments/values/{segmentKey}", null, options => {
+                options.AddQueryString("cursor", cursor);
+                options.AddQueryString("search", search);
+                options.AddQueryString("limit", limit);
+            });
+        }
+        public IObservable<SegmentsResponse> GetSegments(string provider, string remoteOrganizationName, string segmentKey, string cursor, string search, int limit)
+        {
+            return Get<SegmentsResponse>($"/organizations/{provider}/{remoteOrganizationName}/segments/{segmentKey}/values", null, options => {
+                options.AddQueryString("cursor", cursor);
+                options.AddQueryString("search", search);
+                options.AddQueryString("limit", limit);
+            });
+        }
+        public IObservable<DastTargetsResponse> GetDastTargets(string provider, string remoteOrganizationName, string cursor, string search, int limit)
+        {
+            return Get<DastTargetsResponse>($"/organizations/{provider}/{remoteOrganizationName}/dast/targets", null, options => {
+                options.AddQueryString("cursor", cursor);
+                options.AddQueryString("search", search);
+                options.AddQueryString("limit", limit);
+            });
+        }
+        public IObservable<DastTargetResponse> CreateDastTarget(string provider, string remoteOrganizationName)
+        {
+            return Post<DastTargetResponse>($"/organizations/{provider}/{remoteOrganizationName}/dast/targets");
+        }
+        public IObservable<RxHttpResponse> DeleteDastTarget(string provider, string remoteOrganizationName, int dastTargetId)
+        {
+            return Delete($"/organizations/{provider}/{remoteOrganizationName}/dast/targets/{dastTargetId}");
+        }
+        public IObservable<DastTargetResponse> EditDastTarget(string provider, string remoteOrganizationName, int dastTargetId)
+        {
+            return Put<DastTargetResponse>($"/organizations/{provider}/{remoteOrganizationName}/dast/targets/{dastTargetId}");
+        }
+        public IObservable<EnterpriseOrganizationsResponse> ListEnterpriseOrganizations(string enterpriseName, string cursor, int limit, string provider)
+        {
+            return Get<EnterpriseOrganizationsResponse>($"/enterprises/{provider}/{enterpriseName}/organizations", null, options => {
+                options.AddQueryString("cursor", cursor);
+                options.AddQueryString("limit", limit);
+            });
+        }
+        public IObservable<EnterpriseListResponse> ListEnterprises(string cursor, int limit, string provider)
+        {
+            return Get<EnterpriseListResponse>($"/enterprises/{provider}", null, options => {
+                options.AddQueryString("cursor", cursor);
+                options.AddQueryString("limit", limit);
+            });
+        }
+        public IObservable<GetEnterpriseResponse> GetEnterprise(string enterpriseName, string provider)
+        {
+            return Get<GetEnterpriseResponse>($"/enterprises/{provider}/{enterpriseName}");
+        }
+        public IObservable<SeatsResponse> ListEnterpriseSeats(string provider, string enterpriseName, string cursor, int limit, string search)
+        {
+            return Get<SeatsResponse>($"/enterprises/{provider}/{enterpriseName}/seats", null, options => {
+                options.AddQueryString("cursor", cursor);
+                options.AddQueryString("limit", limit);
+                options.AddQueryString("search", search);
+            });
+        }
+        public IObservable<RxHttpResponse> ListEnterpriseSeatsCsv(string provider, string enterpriseName)
+        {
+            return Get($"/reports/enterprises/{provider}/{enterpriseName}/seatsCsv");
         }
     }
 }
