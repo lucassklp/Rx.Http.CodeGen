@@ -10,6 +10,7 @@ public class KeycloakGenerationTests : FileGenerationTests
         {
             OpenApiDefinition = ReadInputFile("keycloak.json"),
             Path = "",
+            DocumentType = "json",
             ConsumerName = "Keycloak",
             Type = "object",
             Namespace = "Keycloak"

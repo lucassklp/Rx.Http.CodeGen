@@ -10,6 +10,7 @@ public class PetstoreGenerationTests : FileGenerationTests
         {
             OpenApiDefinition = ReadInputFile("petstore.json"),
             Path = "",
+            DocumentType = "json",
             ConsumerName = "Petstore",
             Type = "object",
             Namespace = "Swagger.Petstore"

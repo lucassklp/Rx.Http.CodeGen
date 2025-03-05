@@ -10,9 +10,11 @@ public class ConfigurationProcessor(ConsumerGenerationArgs args)
         string? openApiDefinition = null;
         var initialPath = Directory.GetCurrentDirectory();
         string defaultType = "object";
+        string documentType = "json";
 
         if (!string.IsNullOrEmpty(args.Url))
         {
+            documentType = ReadDocumentType(args, args.Url);
             Logger.Log($"Fetching {args.Url}");
             try
             {
@@ -28,6 +30,8 @@ public class ConfigurationProcessor(ConsumerGenerationArgs args)
         }
         else if (!string.IsNullOrEmpty(args.File))
         {
+            documentType = ReadDocumentType(args, args.File);
+
             try
             {
                 Logger.Log($"Reading {args.File}");
@@ -61,8 +65,27 @@ public class ConfigurationProcessor(ConsumerGenerationArgs args)
             Path = Path.Combine(initialPath, args.Namespace),
             Namespace = args.Namespace,
             OpenApiDefinition = openApiDefinition!,
+            DocumentType = documentType,
             ConsumerName = args.Output.ToPascalCase(),
             Type = defaultType,
         };
+    }
+
+    private string ReadDocumentType(ConsumerGenerationArgs args, string pathOrUrl)
+    {
+        if(args.DocumentType is string type)
+        {
+            return type;
+        }
+
+        if(pathOrUrl.EndsWith("json")){
+            return "json";
+        }
+
+        if(pathOrUrl.EndsWith("yaml")){
+            return "yaml";
+        }
+
+        return "json";
     }
 }

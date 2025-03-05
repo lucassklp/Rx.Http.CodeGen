@@ -20,6 +20,8 @@ namespace Codacy.Models
         public string ClosedAt { get; set; }
         [JsonProperty("dueAt")]
         public string DueAt { get; set; }
+        [JsonProperty("ignored")]
+        public SrmIgnoredBody Ignored { get; set; }
         [JsonProperty("priority")]
         public string Priority { get; set; }
         [JsonProperty("status")]
@@ -40,6 +42,12 @@ namespace Codacy.Models
         public string CvssVector { get; set; }
         [JsonProperty("cwe")]
         public string Cwe { get; set; }
+        [JsonProperty("cve")]
+        public List<string> Cve { get; set; }
+        [JsonProperty("fixedVersion")]
+        public string FixedVersion { get; set; }
+        [JsonProperty("application")]
+        public string Application { get; set; }
         [JsonProperty("affectedTargets")]
         public string AffectedTargets { get; set; }
         [JsonProperty("additionalInfo")]

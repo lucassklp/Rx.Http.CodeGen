@@ -14,6 +14,8 @@ namespace Codacy.Models
         public int IssuesPercentage { get; set; }
         [JsonProperty("issuesCount")]
         public int IssuesCount { get; set; }
+        [JsonProperty("loc")]
+        public int Loc { get; set; }
         [JsonProperty("complexFilesPercentage")]
         public int ComplexFilesPercentage { get; set; }
         [JsonProperty("complexFilesCount")]
@@ -28,5 +30,7 @@ namespace Codacy.Models
         public Branch SelectedBranch { get; set; }
         [JsonProperty("coverage")]
         public Coverage Coverage { get; set; }
+        [JsonProperty("goals")]
+        public RepositoryQualitySettings Goals { get; set; }
     }
 }

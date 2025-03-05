@@ -32,5 +32,21 @@ namespace Codacy.Models
         public int OpenMedium { get; set; }
         [JsonProperty("openLow")]
         public int OpenLow { get; set; }
+        [JsonProperty("ignoredCritical")]
+        public int IgnoredCritical { get; set; }
+        [JsonProperty("ignoredHigh")]
+        public int IgnoredHigh { get; set; }
+        [JsonProperty("ignoredMedium")]
+        public int IgnoredMedium { get; set; }
+        [JsonProperty("ignoredLow")]
+        public int IgnoredLow { get; set; }
+        [JsonProperty("unignoredCritical")]
+        public int UnignoredCritical { get; set; }
+        [JsonProperty("unignoredHigh")]
+        public int UnignoredHigh { get; set; }
+        [JsonProperty("unignoredMedium")]
+        public int UnignoredMedium { get; set; }
+        [JsonProperty("unignoredLow")]
+        public int UnignoredLow { get; set; }
     }
 }

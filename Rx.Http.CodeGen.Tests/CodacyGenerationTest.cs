@@ -10,6 +10,7 @@ public class CodacyGenerationTests : FileGenerationTests
         {
             OpenApiDefinition = ReadInputFile("codacy.yaml"),
             Path = "",
+            DocumentType = "yaml",
             ConsumerName = "Codacy",
             Type = "object",
             Namespace = "Codacy"

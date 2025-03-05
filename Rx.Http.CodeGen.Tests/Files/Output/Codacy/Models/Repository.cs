@@ -34,6 +34,8 @@ namespace Codacy.Models
         public int CodingStandardId { get; set; }
         [JsonProperty("codingStandardName")]
         public string CodingStandardName { get; set; }
+        [JsonProperty("standards")]
+        public List<CodingStandardInfo> Standards { get; set; }
         [JsonProperty("addedState")]
         public string AddedState { get; set; }
         [JsonProperty("gatePolicyId")]
